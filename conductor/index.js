@@ -19,6 +19,7 @@ const { getLogs } = require('./logger')   // must be first — patches console
 const pb        = require('./pixelblaze')
 const firestorm = require('./firestorm')
 const forge     = require('./forge')
+const pulsemap  = require('./pulsemap')
 
 const DEV  = process.argv.includes('--dev')
 const PORT = parseInt(process.env.PORT || '8080', 10)
@@ -177,6 +178,9 @@ app.post('/api/catalog', (req, res) => {
 
 // PULSEFORGE API
 forge.registerRoutes(app)
+
+// PULSEMAP API
+pulsemap.registerRoutes(app)
 
 // Logs
 app.get('/api/logs', (_req, res) => {

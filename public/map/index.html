@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSEMAP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    :root {
+      --bg:      #06080a;
+      --surface: #11161c;
+      --panel:   #161d25;
+      --border:  #1f2a36;
+      --border2: #2c3a4a;
+      --text:    #d8dde3;
+      --muted:   #8b95a3;
+      --dim:     #525d6c;
+      --accent:  #ff4d5e;
+      --cyan:    #00e1ff;
+      --mono:    'JetBrains Mono', monospace;
+      --sans:    'IBM Plex Sans', system-ui, sans-serif;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden }
+
+    /* ── Header ── */
+    #header {
+      height: 44px; background: var(--panel); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 1rem; gap: 1rem;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    }
+    #header .logo { color: var(--accent); font-weight: 700; margin-right: auto }
+    #header a { color: var(--dim); text-decoration: none; font-size: 10px }
+    #header a:hover { color: var(--text) }
+
+    .hbtn {
+      background: var(--surface); border: 1px solid var(--border2); color: var(--muted);
+      font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+      padding: .3rem .75rem; border-radius: 4px; cursor: pointer;
+    }
+    .hbtn:hover { border-color: var(--cyan); color: var(--cyan) }
+    .hbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff }
+    .hbtn.primary:hover { background: #cc2233; border-color: #cc2233 }
+
+    /* ── Layout ── */
+    #layout { display: flex; height: calc(100vh - 44px) }
+
+    /* ── Left sidebar ── */
+    #sidebar {
+      width: 220px; flex-shrink: 0; background: var(--panel);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-section { padding: .6rem .75rem; border-bottom: 1px solid var(--border) }
+    .sidebar-label {
+      font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--dim); margin-bottom: .4rem;
+    }
+    .sidebar-scroll { flex: 1; overflow-y: auto; padding: .5rem 0 }
+
+    .device-row {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .4rem .75rem; cursor: pointer; font-size: 12px;
+      border-left: 3px solid transparent;
+    }
+    .device-row:hover { background: var(--surface) }
+    .device-row.selected { background: rgba(0,225,255,.06); border-left-color: var(--cyan) }
+    .device-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0 }
+    .device-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    .device-px { font-family: var(--mono); font-size: 9px; color: var(--dim) }
+
+    .zone-row {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .35rem .75rem; cursor: pointer; font-size: 12px;
+      border-left: 3px solid transparent;
+    }
+    .zone-row:hover { background: var(--surface) }
+    .zone-row.selected { background: rgba(255,77,94,.06); border-left-color: var(--accent) }
+    .zone-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0 }
+    .zone-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+
+    .icon-btn {
+      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+      background: none; border: 1px solid var(--border); border-radius: 3px;
+      color: var(--dim); font-size: 13px; cursor: pointer; flex-shrink: 0;
+    }
+    .icon-btn:hover { border-color: var(--border2); color: var(--text) }
+    .icon-btn.danger:hover { border-color: var(--accent); color: var(--accent) }
+
+    .sidebar-actions { display: flex; gap: .4rem; flex-wrap: wrap }
+    .sbtn {
+      flex: 1; min-width: 0;
+      background: var(--surface); border: 1px solid var(--border2); color: var(--muted);
+      font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+      padding: .3rem .4rem; border-radius: 3px; cursor: pointer; white-space: nowrap;
+    }
+    .sbtn:hover { border-color: var(--cyan); color: var(--cyan) }
+
+    /* ── Canvas area ── */
+    #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: var(--bg) }
+    #stage-canvas { width: 100%; height: 100%; display: block; cursor: default }
+    #stage-canvas.tool-pan    { cursor: grab }
+    #stage-canvas.tool-pan.dragging { cursor: grabbing }
+    #stage-canvas.tool-zone   { cursor: crosshair }
+    #stage-canvas.tool-select { cursor: default }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      background: var(--panel); border: 1px solid var(--border2); border-radius: 8px;
+      display: flex; align-items: center; gap: 2px; padding: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+    .tool-btn {
+      background: none; border: none; border-radius: 5px;
+      color: var(--muted); font-family: var(--mono); font-size: 10px;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: .35rem .65rem; cursor: pointer;
+    }
+    .tool-btn:hover { background: var(--surface); color: var(--text) }
+    .tool-btn.active { background: rgba(255,77,94,.15); color: var(--accent) }
+    .tool-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px }
+    .zoom-btn {
+      background: none; border: none; color: var(--muted); font-size: 14px;
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-radius: 4px;
+    }
+    .zoom-btn:hover { background: var(--surface); color: var(--text) }
+    #zoom-label { font-family: var(--mono); font-size: 10px; color: var(--dim); width: 36px; text-align: center }
+
+    /* ── Right panel ── */
+    #props {
+      width: 240px; flex-shrink: 0; background: var(--panel);
+      border-left: 1px solid var(--border); display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .props-header {
+      padding: .6rem .85rem; border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--dim);
+    }
+    .prop-row { padding: .4rem .85rem; display: flex; flex-direction: column; gap: .2rem }
+    .prop-label { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim) }
+    .prop-input {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      font-family: var(--mono); font-size: 11px; padding: .3rem .5rem; border-radius: 3px;
+      width: 100%;
+    }
+    .prop-input:focus { outline: none; border-color: var(--cyan) }
+    .prop-select {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      font-family: var(--mono); font-size: 11px; padding: .3rem .5rem; border-radius: 3px;
+      width: 100%;
+    }
+    .prop-hint { font-size: 11px; color: var(--muted); line-height: 1.4 }
+    .prop-divider { height: 1px; background: var(--border); margin: .25rem 0 }
+    .color-row { display: flex; gap: .35rem; flex-wrap: wrap }
+    .color-chip {
+      width: 20px; height: 20px; border-radius: 4px; cursor: pointer;
+      border: 2px solid transparent; flex-shrink: 0;
+    }
+    .color-chip.selected { border-color: #fff }
+    .ctrl-assign { font-size: 11px; color: var(--muted) }
+
+    /* ── Modals ── */
+    .overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(6,8,10,.8); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .overlay.open { display: flex }
+    .modal {
+      width: min(480px, 95vw); background: var(--surface);
+      border: 1px solid var(--border2); border-radius: 10px;
+      box-shadow: 0 32px 80px rgba(0,0,0,.7); overflow: hidden;
+    }
+    .modal-header {
+      padding: .7rem 1rem; background: var(--panel); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .15em;
+      text-transform: uppercase; color: var(--accent);
+    }
+    .modal-close { background: none; border: none; color: var(--dim); font-size: 1.1rem; cursor: pointer }
+    .modal-close:hover { color: var(--text) }
+    .modal-body { padding: 1rem; display: flex; flex-direction: column; gap: .75rem }
+    .modal-footer {
+      padding: .7rem 1rem; border-top: 1px solid var(--border); background: var(--panel);
+      display: flex; gap: .5rem; justify-content: flex-end;
+    }
+    .field { display: flex; flex-direction: column; gap: .25rem }
+    .field label { font-family: var(--mono); font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--dim) }
+    .field input, .field select {
+      background: var(--bg); border: 1px solid var(--border2); color: var(--text);
+      font-family: var(--mono); font-size: 12px; padding: .45rem .65rem; border-radius: 4px;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--cyan) }
+    .field-row { display: flex; gap: .5rem }
+    .field-row .field { flex: 1 }
+    .status-line { font-family: var(--mono); font-size: 11px; color: var(--muted); min-height: 1.4em }
+    .status-line.ok { color: #10b981 }
+    .status-line.err { color: var(--accent) }
+    .pb-preview {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: .6rem .85rem; font-family: var(--mono); font-size: 10px;
+      color: var(--muted); line-height: 1.8; display: none;
+    }
+    .pb-preview.show { display: block }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<div id="header">
+  <span class="logo">Pulse<span style="color:#d8dde3">map</span></span>
+  <a href="/">Deck</a>
+  <a href="/forge/">Forge</a>
+  <button class="hbtn" id="btn-load-topo">Load Topology</button>
+  <button class="hbtn primary" id="btn-save-topo">Save Topology</button>
+</div>
+
+<div id="layout">
+
+  <!-- ── Left sidebar ──────────────────────────────────────────────────── -->
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Controllers</div>
+      <div class="sidebar-actions">
+        <button class="sbtn" id="btn-add-ctrl">+ Add</button>
+        <button class="sbtn" id="btn-import-pb">⬇ Import PB</button>
+      </div>
+    </div>
+    <div class="sidebar-scroll" id="ctrl-list"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Zones</div>
+      <div class="sidebar-actions">
+        <button class="sbtn" id="btn-add-zone">+ Zone</button>
+      </div>
+    </div>
+    <div class="sidebar-scroll" id="zone-list" style="flex:0.6"></div>
+  </div>
+
+  <!-- ── Stage canvas ───────────────────────────────────────────────────── -->
+  <div id="canvas-wrap">
+    <canvas id="stage-canvas"></canvas>
+    <div id="toolbar">
+      <button class="tool-btn active" data-tool="select" title="Select & Move (V)">▸ Select</button>
+      <button class="tool-btn" data-tool="zone" title="Draw Zone (Z)">⬡ Zone</button>
+      <button class="tool-btn" data-tool="pan" title="Pan (Space)">✥ Pan</button>
+      <div class="tool-sep"></div>
+      <button class="zoom-btn" id="zoom-out">−</button>
+      <div id="zoom-label">100%</div>
+      <button class="zoom-btn" id="zoom-in">+</button>
+      <button class="zoom-btn" id="zoom-fit" title="Fit all">⊡</button>
+    </div>
+  </div>
+
+  <!-- ── Right properties panel ─────────────────────────────────────────── -->
+  <div id="props">
+    <div class="props-header" id="props-title">Nothing selected</div>
+    <div id="props-body">
+      <div class="prop-row">
+        <p class="prop-hint" style="color:var(--dim);font-size:11px;padding:.5rem 0">
+          Click a controller or zone to edit its properties.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Controller modal ──────────────────────────────────────────────── -->
+<div class="overlay" id="modal-add-ctrl">
+  <div class="modal">
+    <div class="modal-header">Add Controller <button class="modal-close" data-close="modal-add-ctrl">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input id="ac-name" placeholder="Stage Left" /></div>
+      <div class="field-row">
+        <div class="field"><label>IP Address</label><input id="ac-ip" placeholder="192.168.1.100" /></div>
+        <div class="field"><label>Pixel Count</label><input id="ac-px" type="number" value="144" min="1" max="4096" /></div>
+      </div>
+      <div class="field">
+        <label>Geometry</label>
+        <select id="ac-geo">
+          <option value="1d">1D — Linear strip</option>
+          <option value="2d">2D — Matrix / panel</option>
+          <option value="3d">3D — Volume</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="hbtn" data-close="modal-add-ctrl">Cancel</button>
+      <button class="hbtn primary" id="btn-ac-add">Add to Stage</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Import from Pixelblaze modal ──────────────────────────────────────── -->
+<div class="overlay" id="modal-import-pb">
+  <div class="modal">
+    <div class="modal-header">Import from Pixelblaze <button class="modal-close" data-close="modal-import-pb">✕</button></div>
+    <div class="modal-body">
+      <p class="prop-hint">Connect to a live Pixelblaze to pull its pixel count and mapped LED positions.</p>
+      <div class="field-row">
+        <div class="field" style="flex:2"><label>IP Address</label><input id="pb-ip" placeholder="192.168.1.100" /></div>
+        <div class="field" style="flex:0;align-self:flex-end">
+          <button class="hbtn" id="btn-pb-connect" style="white-space:nowrap">Connect</button>
+        </div>
+      </div>
+      <div class="status-line" id="pb-status"></div>
+      <div class="pb-preview" id="pb-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="hbtn" data-close="modal-import-pb">Cancel</button>
+      <button class="hbtn primary" id="btn-pb-add" disabled>Add to Stage</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict'
+
+// ── Colour palette ────────────────────────────────────────────────────────────
+const CTRL_COLORS = ['#00e1ff','#7c3aed','#10b981','#f59e0b','#f43f5e','#3b82f6','#ec4899','#84cc16']
+const ZONE_COLORS = ['#ff4d5e','#00e1ff','#10b981','#f59e0b','#7c3aed','#3b82f6']
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const S = {
+  controllers: [],   // { id, name, ip, pixelCount, geometry, color, x, y, scale, rotation, pixels }
+  zones: [],         // { id, name, color, geometry, controllers:[], polygon:[{x,y}] }
+  selected: null,    // { type:'controller'|'zone', id }
+  tool: 'select',
+  view: { x: 80, y: 60, zoom: 0.85 },
+  drag: null,        // { type, id, startSX, startSY, origX, origY }
+  zoneDraft: [],     // [{x,y}] polygon vertices being placed
+  dirty: false,
+}
+
+let _colorIdx = 0
+function nextColor(palette) { return palette[_colorIdx++ % palette.length] }
+
+function uid() { return Math.random().toString(36).slice(2, 9) }
+
+// ── Canvas setup ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('stage-canvas')
+const ctx    = canvas.getContext('2d')
+
+const STAGE_W = 1000
+const STAGE_H = 600
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1
+  const rect = canvas.parentElement.getBoundingClientRect()
+  canvas.width  = rect.width  * dpr
+  canvas.height = rect.height * dpr
+  ctx.scale(dpr, dpr)
+  canvas.style.width  = rect.width  + 'px'
+  canvas.style.height = rect.height + 'px'
+  render()
+}
+
+// ── Coordinate transforms ─────────────────────────────────────────────────────
+function stageToCanvas(sx, sy) {
+  return [sx * S.view.zoom + S.view.x, sy * S.view.zoom + S.view.y]
+}
+function canvasToStage(cx, cy) {
+  return [(cx - S.view.x) / S.view.zoom, (cy - S.view.y) / S.view.zoom]
+}
+
+// ── Pixel position helpers ────────────────────────────────────────────────────
+// Given a controller, get world stage position of pixel i
+function pixelStagePos(ctrl, px, py) {
+  const cos = Math.cos(ctrl.rotation)
+  const sin = Math.sin(ctrl.rotation)
+  const rx = (px - 0.5) * ctrl.scale
+  const ry = (py - 0.5) * ctrl.scale
+  return [ctrl.x + rx * cos - ry * sin, ctrl.y + rx * sin + ry * cos]
+}
+
+// Bounding box of a controller on stage (for hit-testing)
+function ctrlBounds(ctrl) {
+  if (ctrl.pixels && ctrl.pixels.length) {
+    let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity
+    for (const [px, py] of ctrl.pixels) {
+      const [sx, sy] = pixelStagePos(ctrl, px, py)
+      if (sx < mnx) mnx = sx; if (sx > mxx) mxx = sx
+      if (sy < mny) mny = sy; if (sy > mxy) mxy = sy
+    }
+    const pad = 12
+    return { x: mnx - pad, y: mny - pad, w: mxx - mnx + pad*2, h: mxy - mny + pad*2 }
+  }
+  // placeholder square
+  const half = ctrl.scale / 2
+  return { x: ctrl.x - half - 10, y: ctrl.y - half - 10, w: ctrl.scale + 20, h: ctrl.scale + 20 }
+}
+
+function pointInRect(px, py, r) {
+  return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h
+}
+
+function pointInPolygon(px, py, poly) {
+  let inside = false
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y
+    const xj = poly[j].x, yj = poly[j].y
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside
+  }
+  return inside
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function render() {
+  const dpr = window.devicePixelRatio || 1
+  const W = canvas.width / dpr
+  const H = canvas.height / dpr
+
+  ctx.save()
+  ctx.clearRect(0, 0, W, H)
+
+  // Grid
+  ctx.strokeStyle = '#0e1520'
+  ctx.lineWidth = 1
+  const gridSize = 50 * S.view.zoom
+  const offX = S.view.x % gridSize
+  const offY = S.view.y % gridSize
+  for (let x = offX; x < W; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke()
+  }
+  for (let y = offY; y < H; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke()
+  }
+
+  // Stage boundary
+  const [sx0, sy0] = stageToCanvas(0, 0)
+  const [sx1, sy1] = stageToCanvas(STAGE_W, STAGE_H)
+  ctx.strokeStyle = '#1f2a36'
+  ctx.lineWidth = 1.5
+  ctx.setLineDash([6, 4])
+  ctx.strokeRect(sx0, sy0, sx1 - sx0, sy1 - sy0)
+  ctx.setLineDash([])
+
+  ctx.font = `10px 'JetBrains Mono', monospace`
+  ctx.fillStyle = '#2c3a4a'
+  ctx.fillText('STAGE', sx0 + 8, sy0 + 16)
+
+  // Zones
+  for (const zone of S.zones) drawZone(zone)
+
+  // Zone draft
+  if (S.zoneDraft.length > 0) {
+    ctx.save()
+    ctx.strokeStyle = ZONE_COLORS[0]
+    ctx.lineWidth   = 1.5
+    ctx.setLineDash([5, 3])
+    ctx.beginPath()
+    const [fx, fy] = stageToCanvas(S.zoneDraft[0].x, S.zoneDraft[0].y)
+    ctx.moveTo(fx, fy)
+    for (let i = 1; i < S.zoneDraft.length; i++) {
+      const [vx, vy] = stageToCanvas(S.zoneDraft[i].x, S.zoneDraft[i].y)
+      ctx.lineTo(vx, vy)
+    }
+    ctx.stroke()
+    ctx.setLineDash([])
+    // Vertex dots
+    for (const v of S.zoneDraft) {
+      const [vx, vy] = stageToCanvas(v.x, v.y)
+      ctx.fillStyle = ZONE_COLORS[0]
+      ctx.beginPath(); ctx.arc(vx, vy, 4, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.restore()
+  }
+
+  // Controllers
+  for (const ctrl of S.controllers) drawController(ctrl)
+
+  ctx.restore()
+}
+
+function drawZone(zone) {
+  if (zone.polygon.length < 3) return
+  const isSel = S.selected?.type === 'zone' && S.selected?.id === zone.id
+
+  ctx.save()
+  ctx.beginPath()
+  const [fx, fy] = stageToCanvas(zone.polygon[0].x, zone.polygon[0].y)
+  ctx.moveTo(fx, fy)
+  for (let i = 1; i < zone.polygon.length; i++) {
+    const [vx, vy] = stageToCanvas(zone.polygon[i].x, zone.polygon[i].y)
+    ctx.lineTo(vx, vy)
+  }
+  ctx.closePath()
+
+  ctx.fillStyle = hexAlpha(zone.color, isSel ? 0.22 : 0.1)
+  ctx.fill()
+
+  ctx.strokeStyle = isSel ? zone.color : hexAlpha(zone.color, 0.5)
+  ctx.lineWidth   = isSel ? 1.5 : 1
+  if (isSel) ctx.setLineDash([])
+  else ctx.setLineDash([5, 3])
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // Label
+  const cx = zone.polygon.reduce((s, v) => s + v.x, 0) / zone.polygon.length
+  const cy = zone.polygon.reduce((s, v) => s + v.y, 0) / zone.polygon.length
+  const [lx, ly] = stageToCanvas(cx, cy)
+  ctx.font = `bold 10px 'JetBrains Mono', monospace`
+  ctx.fillStyle = zone.color
+  ctx.textAlign = 'center'
+  ctx.fillText(zone.name.toUpperCase(), lx, ly + 4)
+  ctx.textAlign = 'left'
+  ctx.restore()
+}
+
+function drawController(ctrl) {
+  const isSel = S.selected?.type === 'controller' && S.selected?.id === ctrl.id
+  ctx.save()
+
+  if (ctrl.pixels && ctrl.pixels.length) {
+    // Draw real pixel positions
+    const r = Math.max(2, Math.min(6, (ctrl.scale * S.view.zoom) / ctrl.pixels.length * 3))
+    for (let i = 0; i < ctrl.pixels.length; i++) {
+      const [px, py] = ctrl.pixels[i]
+      const [sx, sy] = pixelStagePos(ctrl, px, py)
+      const [cx, cy] = stageToCanvas(sx, sy)
+      ctx.fillStyle = ctrl.color
+      ctx.globalAlpha = 0.85
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.globalAlpha = 1
+  } else {
+    // Placeholder: coloured square with pixel count label
+    const [cx, cy] = stageToCanvas(ctrl.x, ctrl.y)
+    const half = ctrl.scale / 2 * S.view.zoom
+    ctx.fillStyle = hexAlpha(ctrl.color, 0.12)
+    ctx.strokeStyle = hexAlpha(ctrl.color, 0.5)
+    ctx.lineWidth = 1.5
+    ctx.fillRect(cx - half, cy - half, half * 2, half * 2)
+    ctx.strokeRect(cx - half, cy - half, half * 2, half * 2)
+    ctx.font = `9px 'JetBrains Mono', monospace`
+    ctx.fillStyle = ctrl.color
+    ctx.textAlign = 'center'
+    ctx.fillText(ctrl.pixelCount + 'px', cx, cy - 4)
+    ctx.fillText(ctrl.name, cx, cy + 9)
+    ctx.textAlign = 'left'
+  }
+
+  // Selection glow
+  if (isSel) {
+    const b = ctrlBounds(ctrl)
+    const [bx, by] = stageToCanvas(b.x, b.y)
+    const bw = b.w * S.view.zoom
+    const bh = b.h * S.view.zoom
+    ctx.strokeStyle = ctrl.color
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([4, 3])
+    ctx.strokeRect(bx, by, bw, bh)
+    ctx.setLineDash([])
+  }
+
+  ctx.restore()
+}
+
+function hexAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16)
+  const g = parseInt(hex.slice(3,5),16)
+  const b = parseInt(hex.slice(5,7),16)
+  return `rgba(${r},${g},${b},${a})`
+}
+
+// ── Hit testing ───────────────────────────────────────────────────────────────
+function hitTest(sx, sy) {
+  // Controllers first (top of z-order)
+  for (let i = S.controllers.length - 1; i >= 0; i--) {
+    const ctrl = S.controllers[i]
+    if (pointInRect(sx, sy, ctrlBounds(ctrl))) return { type: 'controller', id: ctrl.id }
+  }
+  // Zones
+  for (let i = S.zones.length - 1; i >= 0; i--) {
+    const zone = S.zones[i]
+    if (zone.polygon.length >= 3 && pointInPolygon(sx, sy, zone.polygon))
+      return { type: 'zone', id: zone.id }
+  }
+  return null
+}
+
+// ── Input handling ────────────────────────────────────────────────────────────
+let mouseCanvas = { x: 0, y: 0 }
+let isPanning = false
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect()
+  mouseCanvas = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+
+  if (S.drag) {
+    const [sx, sy] = canvasToStage(mouseCanvas.x, mouseCanvas.y)
+    if (S.drag.type === 'controller') {
+      const ctrl = S.controllers.find(c => c.id === S.drag.id)
+      if (ctrl) {
+        ctrl.x = sx - S.drag.offX
+        ctrl.y = sy - S.drag.offY
+        S.dirty = true
+      }
+    } else if (S.drag.type === 'zone') {
+      const zone = S.zones.find(z => z.id === S.drag.id)
+      if (zone) {
+        const dx = sx - S.drag.lastSX
+        const dy = sy - S.drag.lastSY
+        zone.polygon = zone.polygon.map(v => ({ x: v.x + dx, y: v.y + dy }))
+        S.drag.lastSX = sx
+        S.drag.lastSY = sy
+        S.dirty = true
+      }
+    } else if (S.drag.type === 'pan') {
+      S.view.x += e.movementX
+      S.view.y += e.movementY
+    }
+    render()
+  }
+})
+
+canvas.addEventListener('mousedown', e => {
+  const rect  = canvas.getBoundingClientRect()
+  const cx    = e.clientX - rect.left
+  const cy    = e.clientY - rect.top
+  const [sx, sy] = canvasToStage(cx, cy)
+
+  if (S.tool === 'pan' || (e.button === 1) || (e.button === 0 && e.altKey)) {
+    S.drag = { type: 'pan' }
+    canvas.classList.add('dragging')
+    return
+  }
+
+  if (S.tool === 'zone') {
+    S.zoneDraft.push({ x: sx, y: sy })
+    render()
+    return
+  }
+
+  // Select tool
+  if (e.button === 0) {
+    const hit = hitTest(sx, sy)
+    if (hit) {
+      S.selected = hit
+      if (hit.type === 'controller') {
+        const ctrl = S.controllers.find(c => c.id === hit.id)
+        S.drag = { type: 'controller', id: hit.id, offX: sx - ctrl.x, offY: sy - ctrl.y }
+      } else if (hit.type === 'zone') {
+        S.drag = { type: 'zone', id: hit.id, lastSX: sx, lastSY: sy }
+      }
+    } else {
+      S.selected = null
+    }
+    renderSidebar()
+    renderProps()
+    render()
+  }
+})
+
+canvas.addEventListener('mouseup', () => {
+  S.drag = null
+  canvas.classList.remove('dragging')
+})
+
+canvas.addEventListener('dblclick', e => {
+  const rect  = canvas.getBoundingClientRect()
+  const cx    = e.clientX - rect.left
+  const cy    = e.clientY - rect.top
+
+  if (S.tool === 'zone' && S.zoneDraft.length >= 3) {
+    // Close the polygon
+    const color = nextColor(ZONE_COLORS)
+    const zone = {
+      id: uid(), name: 'Zone ' + (S.zones.length + 1),
+      color, geometry: '1d',
+      controllers: [],
+      polygon: [...S.zoneDraft],
+    }
+    S.zones.push(zone)
+    S.zoneDraft = []
+    S.selected = { type: 'zone', id: zone.id }
+    S.dirty = true
+    renderSidebar(); renderProps(); render()
+    return
+  }
+})
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault()
+  if (S.tool === 'zone' && S.zoneDraft.length > 0) {
+    S.zoneDraft.pop()
+    render()
+  }
+})
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault()
+  const rect = canvas.getBoundingClientRect()
+  const mx   = e.clientX - rect.left
+  const my   = e.clientY - rect.top
+  const factor = e.deltaY < 0 ? 1.1 : 0.9
+  S.view.x = mx - (mx - S.view.x) * factor
+  S.view.y = my - (my - S.view.y) * factor
+  S.view.zoom = Math.max(0.1, Math.min(5, S.view.zoom * factor))
+  updateZoomLabel()
+  render()
+}, { passive: false })
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+  if (e.key === 'v' || e.key === 'V') setTool('select')
+  if (e.key === 'z' || e.key === 'Z') setTool('zone')
+  if (e.key === 'p' || e.key === 'P') setTool('pan')
+  if (e.key === ' ') { e.preventDefault(); setTool('pan') }
+  if (e.key === 'Escape') {
+    S.zoneDraft = []
+    S.selected  = null
+    renderSidebar(); renderProps(); render()
+  }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && S.selected) {
+    deleteSelected()
+  }
+})
+document.addEventListener('keyup', e => {
+  if (e.key === ' ' && S.tool === 'pan') setTool('select')
+})
+
+function setTool(t) {
+  S.tool = t
+  S.zoneDraft = []
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === t))
+  canvas.className = `tool-${t}`
+  render()
+}
+
+document.querySelectorAll('.tool-btn').forEach(b => {
+  b.addEventListener('click', () => setTool(b.dataset.tool))
+})
+
+function updateZoomLabel() {
+  document.getElementById('zoom-label').textContent = Math.round(S.view.zoom * 100) + '%'
+}
+
+document.getElementById('zoom-in').addEventListener('click', () => {
+  S.view.zoom = Math.min(5, S.view.zoom * 1.2); updateZoomLabel(); render()
+})
+document.getElementById('zoom-out').addEventListener('click', () => {
+  S.view.zoom = Math.max(0.1, S.view.zoom / 1.2); updateZoomLabel(); render()
+})
+document.getElementById('zoom-fit').addEventListener('click', fitAll)
+
+function fitAll() {
+  // Fit the stage + a bit of padding
+  const wrap = document.getElementById('canvas-wrap').getBoundingClientRect()
+  const pad  = 60
+  const zoomX = (wrap.width  - pad * 2) / STAGE_W
+  const zoomY = (wrap.height - pad * 2) / STAGE_H
+  S.view.zoom = Math.min(zoomX, zoomY)
+  S.view.x = pad + (wrap.width  - pad*2 - STAGE_W * S.view.zoom) / 2
+  S.view.y = pad + (wrap.height - pad*2 - STAGE_H * S.view.zoom) / 2
+  updateZoomLabel()
+  render()
+}
+
+// ── Sidebar rendering ─────────────────────────────────────────────────────────
+function renderSidebar() {
+  const ctrlList = document.getElementById('ctrl-list')
+  ctrlList.innerHTML = ''
+  for (const ctrl of S.controllers) {
+    const row = document.createElement('div')
+    row.className = 'device-row' + (S.selected?.id === ctrl.id ? ' selected' : '')
+    row.innerHTML = `
+      <div class="device-dot" style="background:${ctrl.color}"></div>
+      <div class="device-name">${ctrl.name}</div>
+      <div class="device-px">${ctrl.pixelCount}px</div>
+      <button class="icon-btn danger" data-del-ctrl="${ctrl.id}" title="Remove">×</button>
+    `
+    row.addEventListener('click', e => {
+      if (e.target.closest('[data-del-ctrl]')) return
+      S.selected = { type: 'controller', id: ctrl.id }
+      renderSidebar(); renderProps(); render()
+    })
+    ctrlList.appendChild(row)
+  }
+
+  const zoneList = document.getElementById('zone-list')
+  zoneList.innerHTML = ''
+  for (const zone of S.zones) {
+    const row = document.createElement('div')
+    row.className = 'zone-row' + (S.selected?.id === zone.id ? ' selected' : '')
+    row.innerHTML = `
+      <div class="zone-swatch" style="background:${zone.color}"></div>
+      <div class="zone-name">${zone.name}</div>
+      <button class="icon-btn danger" data-del-zone="${zone.id}" title="Remove">×</button>
+    `
+    row.addEventListener('click', e => {
+      if (e.target.closest('[data-del-zone]')) return
+      S.selected = { type: 'zone', id: zone.id }
+      renderSidebar(); renderProps(); render()
+    })
+    zoneList.appendChild(row)
+  }
+
+  // Delete buttons
+  document.querySelectorAll('[data-del-ctrl]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation()
+      const id = btn.dataset.delCtrl
+      S.controllers = S.controllers.filter(c => c.id !== id)
+      if (S.selected?.id === id) S.selected = null
+      S.dirty = true; renderSidebar(); renderProps(); render()
+    })
+  })
+  document.querySelectorAll('[data-del-zone]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation()
+      const id = btn.dataset.delZone
+      S.zones = S.zones.filter(z => z.id !== id)
+      if (S.selected?.id === id) S.selected = null
+      S.dirty = true; renderSidebar(); renderProps(); render()
+    })
+  })
+}
+
+// ── Properties panel ──────────────────────────────────────────────────────────
+function renderProps() {
+  const title = document.getElementById('props-title')
+  const body  = document.getElementById('props-body')
+
+  if (!S.selected) {
+    title.textContent = 'Nothing selected'
+    body.innerHTML = `<div class="prop-row"><p class="prop-hint" style="color:var(--dim);font-size:11px;padding:.5rem 0">Click a controller or zone to edit its properties.</p></div>`
+    return
+  }
+
+  if (S.selected.type === 'controller') {
+    const ctrl = S.controllers.find(c => c.id === S.selected.id)
+    if (!ctrl) return
+    title.textContent = 'Controller'
+    body.innerHTML = `
+      <div class="prop-row"><div class="prop-label">Name</div>
+        <input class="prop-input" id="pp-name" value="${escH(ctrl.name)}"></div>
+      <div class="prop-row"><div class="prop-label">IP Address</div>
+        <input class="prop-input" id="pp-ip" value="${escH(ctrl.ip)}"></div>
+      <div class="prop-row"><div class="prop-label">Pixel Count</div>
+        <input class="prop-input" id="pp-px" type="number" value="${ctrl.pixelCount}" min="1" max="4096"></div>
+      <div class="prop-row"><div class="prop-label">Geometry</div>
+        <select class="prop-select" id="pp-geo">
+          <option value="1d" ${ctrl.geometry==='1d'?'selected':''}>1D — Strip</option>
+          <option value="2d" ${ctrl.geometry==='2d'?'selected':''}>2D — Matrix</option>
+          <option value="3d" ${ctrl.geometry==='3d'?'selected':''}>3D — Volume</option>
+        </select></div>
+      <div class="prop-row"><div class="prop-label">Scale (stage units)</div>
+        <input class="prop-input" id="pp-scale" type="number" value="${ctrl.scale}" min="10" max="2000"></div>
+      <div class="prop-row"><div class="prop-label">Colour</div>
+        <div class="color-row">${CTRL_COLORS.map(c =>
+          `<div class="color-chip${ctrl.color===c?' selected':''}" data-color="${c}" style="background:${c}" title="${c}"></div>`
+        ).join('')}</div></div>
+      <div class="prop-divider"></div>
+      <div class="prop-row"><div class="prop-label">Zones</div>
+        <div class="ctrl-assign">${ctrl.zones?.join(', ') || 'None — assign by drawing zones'}</div></div>
+      <div class="prop-row"><div class="prop-label">Pixel Map</div>
+        <div class="prop-hint">${ctrl.pixels ? ctrl.pixels.length + ' mapped positions imported' : 'No map — showing placeholder'}</div>
+        <button class="sbtn" id="pp-reimport" style="margin-top:.35rem">Re-import from device</button>
+      </div>
+    `
+    // Live updates
+    const bind = (id, key, parse) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      el.addEventListener('input', () => {
+        ctrl[key] = parse ? parse(el.value) : el.value
+        S.dirty = true; renderSidebar(); render()
+      })
+    }
+    bind('pp-name', 'name')
+    bind('pp-ip',   'ip')
+    bind('pp-px',   'pixelCount', v => parseInt(v, 10) || 1)
+    bind('pp-geo',  'geometry')
+    bind('pp-scale','scale', v => parseFloat(v) || 100)
+
+    body.querySelectorAll('.color-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        ctrl.color = chip.dataset.color
+        S.dirty = true; renderProps(); render()
+      })
+    })
+
+    document.getElementById('pp-reimport')?.addEventListener('click', () => {
+      document.getElementById('pb-ip').value = ctrl.ip
+      openModal('modal-import-pb')
+    })
+
+  } else if (S.selected.type === 'zone') {
+    const zone = S.zones.find(z => z.id === S.selected.id)
+    if (!zone) return
+    title.textContent = 'Zone'
+    body.innerHTML = `
+      <div class="prop-row"><div class="prop-label">Name</div>
+        <input class="prop-input" id="zp-name" value="${escH(zone.name)}"></div>
+      <div class="prop-row"><div class="prop-label">Geometry</div>
+        <select class="prop-select" id="zp-geo">
+          <option value="1d" ${zone.geometry==='1d'?'selected':''}>1D</option>
+          <option value="2d" ${zone.geometry==='2d'?'selected':''}>2D</option>
+          <option value="3d" ${zone.geometry==='3d'?'selected':''}>3D</option>
+        </select></div>
+      <div class="prop-row"><div class="prop-label">Colour</div>
+        <div class="color-row">${ZONE_COLORS.map(c =>
+          `<div class="color-chip${zone.color===c?' selected':''}" data-color="${c}" style="background:${c}" title="${c}"></div>`
+        ).join('')}</div></div>
+      <div class="prop-divider"></div>
+      <div class="prop-row"><div class="prop-label">Controllers in zone</div>
+        <div id="zp-ctrl-list"></div></div>
+      <div class="prop-row"><p class="prop-hint" style="font-size:11px">Right-click canvas to undo last zone vertex. Double-click to close polygon.</p></div>
+    `
+
+    // Controller checkboxes
+    const ctrlListEl = document.getElementById('zp-ctrl-list')
+    for (const ctrl of S.controllers) {
+      const checked = zone.controllers.includes(ctrl.id)
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:.4rem;font-size:12px;padding:.2rem 0;cursor:pointer'
+      label.innerHTML = `<input type="checkbox" ${checked?'checked':''} data-ctrl-id="${ctrl.id}">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ctrl.color}"></span>
+        ${escH(ctrl.name)}`
+      ctrlListEl.appendChild(label)
+    }
+    ctrlListEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.ctrlId
+        if (cb.checked) { if (!zone.controllers.includes(id)) zone.controllers.push(id) }
+        else zone.controllers = zone.controllers.filter(x => x !== id)
+        S.dirty = true
+      })
+    })
+
+    const bind = (id, key) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      el.addEventListener('input', () => {
+        zone[key] = el.value; S.dirty = true; renderSidebar(); render()
+      })
+    }
+    bind('zp-name', 'name')
+    bind('zp-geo',  'geometry')
+
+    body.querySelectorAll('.color-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        zone.color = chip.dataset.color; S.dirty = true; renderProps(); render()
+      })
+    })
+  }
+}
+
+function deleteSelected() {
+  if (!S.selected) return
+  if (S.selected.type === 'controller') S.controllers = S.controllers.filter(c => c.id !== S.selected.id)
+  if (S.selected.type === 'zone')       S.zones       = S.zones.filter(z => z.id !== S.selected.id)
+  S.selected = null; S.dirty = true
+  renderSidebar(); renderProps(); render()
+}
+
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open') }
+function closeModal(id) { document.getElementById(id).classList.remove('open') }
+
+document.querySelectorAll('[data-close]').forEach(el => {
+  el.addEventListener('click', () => closeModal(el.dataset.close))
+})
+document.querySelectorAll('.overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) closeModal(ov.id) })
+})
+
+// ── Add Controller ────────────────────────────────────────────────────────────
+document.getElementById('btn-add-ctrl').addEventListener('click', () => openModal('modal-add-ctrl'))
+
+document.getElementById('btn-ac-add').addEventListener('click', () => {
+  const name  = document.getElementById('ac-name').value.trim() || 'Controller'
+  const ip    = document.getElementById('ac-ip').value.trim()   || '0.0.0.0'
+  const px    = parseInt(document.getElementById('ac-px').value, 10) || 60
+  const geo   = document.getElementById('ac-geo').value
+
+  const ctrl = {
+    id: uid(), name, ip, pixelCount: px, geometry: geo,
+    color: nextColor(CTRL_COLORS),
+    x: STAGE_W / 2, y: STAGE_H / 2,
+    scale: 200, rotation: 0,
+    pixels: null,
+  }
+  S.controllers.push(ctrl)
+  S.selected = { type: 'controller', id: ctrl.id }
+  S.dirty = true
+  closeModal('modal-add-ctrl')
+  renderSidebar(); renderProps(); render()
+})
+
+// ── Import from Pixelblaze ────────────────────────────────────────────────────
+let _pbImport = null   // { name, pixelCount, pixels, is3D }
+
+document.getElementById('btn-import-pb').addEventListener('click', () => {
+  _pbImport = null
+  document.getElementById('pb-status').textContent = ''
+  document.getElementById('pb-status').className = 'status-line'
+  document.getElementById('pb-preview').className = 'pb-preview'
+  document.getElementById('btn-pb-add').disabled = true
+  openModal('modal-import-pb')
+})
+
+document.getElementById('btn-pb-connect').addEventListener('click', async () => {
+  const ip  = document.getElementById('pb-ip').value.trim()
+  const btn = document.getElementById('btn-pb-connect')
+  const st  = document.getElementById('pb-status')
+  const pre = document.getElementById('pb-preview')
+  if (!ip) { st.textContent = 'Enter an IP address'; return }
+
+  btn.disabled = true
+  st.className = 'status-line'
+  st.textContent = 'Connecting…'
+  pre.className = 'pb-preview'
+  _pbImport = null
+  document.getElementById('btn-pb-add').disabled = true
+
+  try {
+    // 1. Device info
+    const devRes  = await fetch(`/api/pulsemap/device?ip=${encodeURIComponent(ip)}`)
+    const devData = await devRes.json()
+    if (devData.error) throw new Error(devData.error)
+
+    st.textContent = `Connected — ${devData.name} (${devData.pixelCount} px)`
+    st.className   = 'status-line ok'
+
+    // 2. Map data
+    const mapRes  = await fetch(`/api/pulsemap/mapdata?ip=${encodeURIComponent(ip)}&pixelCount=${devData.pixelCount}`)
+    const mapData = await mapRes.json()
+
+    _pbImport = {
+      name:       devData.name,
+      ip,
+      pixelCount: devData.pixelCount,
+      pixels:     mapData.pixels,
+      is3D:       mapData.is3D,
+    }
+
+    pre.className = 'pb-preview show'
+    pre.innerHTML =
+      `Name: <b style="color:var(--text)">${escH(devData.name)}</b><br>` +
+      `Pixels: <b style="color:var(--text)">${devData.pixelCount}</b><br>` +
+      `Map: <b style="color:var(--text)">${mapData.pixels ? mapData.pixels.length + ' positions (' + (mapData.is3D ? '3D' : '2D') + ')' : 'No map configured — will show as linear strip'}</b>`
+
+    document.getElementById('btn-pb-add').disabled = false
+  } catch (e) {
+    st.className   = 'status-line err'
+    st.textContent = 'Error: ' + e.message
+  } finally {
+    btn.disabled = false
+  }
+})
+
+document.getElementById('btn-pb-add').addEventListener('click', () => {
+  if (!_pbImport) return
+  // Generate linear strip pixels if no map
+  let pixels = _pbImport.pixels
+  if (!pixels) {
+    pixels = Array.from({ length: _pbImport.pixelCount }, (_, i) => [i / (_pbImport.pixelCount - 1 || 1), 0.5])
+  }
+
+  const ctrl = {
+    id: uid(),
+    name: _pbImport.name,
+    ip:   _pbImport.ip,
+    pixelCount: _pbImport.pixelCount,
+    geometry:   _pbImport.is3D ? '3d' : (pixels.some(p => Math.abs(p[1] - 0.5) > 0.05) ? '2d' : '1d'),
+    color: nextColor(CTRL_COLORS),
+    x: STAGE_W / 2, y: STAGE_H / 2,
+    scale: 250, rotation: 0,
+    pixels,
+  }
+  S.controllers.push(ctrl)
+  S.selected = { type: 'controller', id: ctrl.id }
+  S.dirty = true
+  closeModal('modal-import-pb')
+  renderSidebar(); renderProps(); render()
+})
+
+// ── Zone button ───────────────────────────────────────────────────────────────
+document.getElementById('btn-add-zone').addEventListener('click', () => setTool('zone'))
+
+// ── Topology save / load ──────────────────────────────────────────────────────
+function toTopology() {
+  return {
+    controllers: S.controllers.map(c => ({
+      id:         c.id,
+      name:       c.name,
+      ip:         c.ip,
+      pixelCount: c.pixelCount,
+      geometry:   c.geometry,
+      mapColor:   c.color,
+      stageX:     Math.round(c.x),
+      stageY:     Math.round(c.y),
+      stageScale: Math.round(c.scale),
+      stageRotation: c.rotation,
+      pixels:     c.pixels ? c.pixels.map(p => p.map(v => parseFloat(v.toFixed(4)))) : null,
+    })),
+    zones: S.zones.map(z => ({
+      id:          z.id,
+      name:        z.name,
+      geometry:    z.geometry,
+      mapColor:    z.color,
+      controllers: z.controllers,
+      polygon:     z.polygon.map(v => ({ x: Math.round(v.x), y: Math.round(v.y) })),
+    })),
+  }
+}
+
+function fromTopology(topo) {
+  S.controllers = (topo.controllers || []).map(c => ({
+    id:         c.id || uid(),
+    name:       c.name || c.id || 'Controller',
+    ip:         c.ip   || '',
+    pixelCount: c.pixelCount || 0,
+    geometry:   c.geometry   || '1d',
+    color:      c.mapColor   || nextColor(CTRL_COLORS),
+    x:          c.stageX     ?? STAGE_W / 2,
+    y:          c.stageY     ?? STAGE_H / 2,
+    scale:      c.stageScale ?? 200,
+    rotation:   c.stageRotation ?? 0,
+    pixels:     c.pixels     || null,
+  }))
+  S.zones = (topo.zones || []).map(z => ({
+    id:          z.id || uid(),
+    name:        z.name || 'Zone',
+    color:       z.mapColor   || nextColor(ZONE_COLORS),
+    geometry:    z.geometry   || '1d',
+    controllers: z.controllers || [],
+    polygon:     z.polygon    || [],
+  }))
+}
+
+document.getElementById('btn-save-topo').addEventListener('click', async () => {
+  const topo = toTopology()
+  try {
+    const res = await fetch('/api/topology', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(topo),
+    })
+    const data = await res.json()
+    if (data.ok) {
+      S.dirty = false
+      document.getElementById('btn-save-topo').textContent = 'Saved ✓'
+      setTimeout(() => document.getElementById('btn-save-topo').textContent = 'Save Topology', 2000)
+    }
+  } catch (e) {
+    alert('Save failed: ' + e.message)
+  }
+})
+
+document.getElementById('btn-load-topo').addEventListener('click', async () => {
+  try {
+    const res  = await fetch('/api/topology')
+    const topo = await res.json()
+    fromTopology(topo)
+    S.selected = null; S.dirty = false
+    renderSidebar(); renderProps(); render()
+  } catch (e) {
+    alert('Load failed: ' + e.message)
+  }
+})
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => { resize() })
+
+// Load topology on start
+;(async () => {
+  try {
+    const res  = await fetch('/api/topology')
+    const topo = await res.json()
+    fromTopology(topo)
+    renderSidebar(); renderProps()
+  } catch (_) {}
+  resize()
+  fitAll()
+})()
+</script>
+
+<script src="/js/bugreport.js"></script>
+</body>
+</html>

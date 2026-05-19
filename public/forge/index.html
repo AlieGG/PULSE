@@ -130,6 +130,7 @@ canvas.v-canvas{width:100%;height:56px;display:block;border-radius:3px;backgroun
     <div class="spinner" id="spinner"></div>
     <button class="var-btn" id="variants-btn" title="Generate 4 variants">A/B/C/D</button>
     <button class="gen-btn" id="gen-btn">Generate ▸</button>
+    <button class="nav-link" id="forge-bug-btn" title="Report a bug" style="cursor:pointer;background:none;border:none;color:var(--faint)">⚠</button>
   </div>
 
   <!-- ── soul sliders ── -->
@@ -670,14 +671,13 @@ function wireRefineChips() {
 }
 
 init().then(() => {
-  // Override the default bug button to include current pattern context
-  document.getElementById('pulse-bug-btn').addEventListener('click', (e) => {
-    e.stopImmediatePropagation()
+  // Bug button: include current pattern code + validation issues in the report
+  document.getElementById('forge-bug-btn').addEventListener('click', () => {
     PulseBugReporter.open({
       code:   currentCode || null,
       issues: currentCode ? PulseValidator.validate(currentCode, currentZone?.geometry) : null,
     })
-  }, true)
+  })
 })
 </script>
 </body>

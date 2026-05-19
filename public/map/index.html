@@ -217,6 +217,7 @@
   <a href="/forge/">Forge</a>
   <button class="hbtn" id="btn-load-topo">Load Topology</button>
   <button class="hbtn primary" id="btn-save-topo">Save Topology</button>
+  <button class="hbtn" id="map-bug-btn" title="Report a bug" style="border-color:transparent;color:var(--dim)">⚠</button>
 </div>
 
 <div id="layout">
@@ -1187,5 +1188,8 @@ window.addEventListener('resize', () => { resize() })
 </script>
 
 <script src="/js/bugreport.js"></script>
+<script>
+document.getElementById('map-bug-btn').addEventListener('click', () => PulseBugReporter.open())
+</script>
 </body>
 </html>

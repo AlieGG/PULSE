@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "units": "mm",
+  "controllers": [],
+  "segments": [],
+  "zones": [
+    { "id": "Z_ALL", "label": "All Zones", "swatch": "#00e1ff" }
+  ]
+}

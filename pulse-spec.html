@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PULSE — Pixelblaze Unified Live Sync Engine · Spec v0.3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e12;
+  --bg-2: #11161c;
+  --bg-3: #161d25;
+  --line: #1f2a36;
+  --line-bright: #2c3a4a;
+  --text: #d8dde3;
+  --text-dim: #8b95a3;
+  --text-faint: #525d6c;
+  --cyan: #00e1ff;
+  --magenta: #ff2bb1;
+  --amber: #ffb648;
+  --green: #38e078;
+  --red: #ff4d5e;
+  --blueprint: rgba(0, 225, 255, 0.04);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--blueprint) 1px, transparent 1px),
+    linear-gradient(90deg, var(--blueprint) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  padding-bottom: 6rem;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+/* ───── HEADER ───── */
+header.masthead {
+  border-bottom: 1px solid var(--line);
+  padding: 2rem 0 1.25rem;
+  margin-bottom: 3rem;
+  position: relative;
+}
+.masthead::before {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.6;
+}
+.crumb {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.crumb span.dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 12px var(--green); animation: pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+h1.title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(180deg, #fff 30%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  max-width: 50ch;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--line);
+}
+.meta-grid .item .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.35rem;
+}
+.meta-grid .item .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+.meta-grid .item .value.cyan { color: var(--cyan); }
+.meta-grid .item .value.amber { color: var(--amber); }
+
+/* ───── SECTIONS ───── */
+section { margin-bottom: 4rem; scroll-margin-top: 2rem; }
+
+.section-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.section-tag::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--cyan);
+}
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin-bottom: 1.25rem;
+  line-height: 1.1;
+}
+
+h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 2rem 0 0.75rem;
+  color: #fff;
+}
+
+h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--magenta);
+  margin: 1.5rem 0 0.5rem;
+}
+
+p { margin-bottom: 1rem; color: var(--text); }
+p + p { margin-top: -0.25rem; }
+
+strong { color: #fff; font-weight: 600; }
+em { color: var(--cyan); font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 0.92em; padding: 1px 5px; background: rgba(0,225,255,0.08); border-radius: 3px; }
+
+a { color: var(--cyan); text-decoration: none; border-bottom: 1px dotted var(--cyan); }
+a:hover { color: #fff; border-bottom-style: solid; }
+
+ul, ol { margin: 0.5rem 0 1rem 0; padding-left: 1.5rem; }
+li { margin-bottom: 0.4rem; color: var(--text); }
+li::marker { color: var(--text-faint); }
+
+/* ───── CALLOUTS ───── */
+.callout {
+  border-left: 2px solid var(--amber);
+  background: linear-gradient(90deg, rgba(255, 182, 72, 0.06), transparent);
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+  border-radius: 0 4px 4px 0;
+}
+.callout.cyan { border-color: var(--cyan); background: linear-gradient(90deg, rgba(0,225,255,0.06), transparent); }
+.callout.red { border-color: var(--red); background: linear-gradient(90deg, rgba(255,77,94,0.06), transparent); }
+.callout-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 0.4rem;
+}
+.callout.cyan .callout-label { color: var(--cyan); }
+.callout.red .callout-label { color: var(--red); }
+
+/* ───── CODE ───── */
+pre {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1.25rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  position: relative;
+}
+pre::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 0; right: 0;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  padding: 0.35rem 0.75rem;
+  background: var(--bg-3);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 6px 0 4px;
+  text-transform: uppercase;
+}
+code { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+.kw { color: var(--magenta); }
+.str { color: var(--green); }
+.num { color: var(--amber); }
+.com { color: var(--text-faint); font-style: italic; }
+.fn { color: var(--cyan); }
+
+/* ───── TABLES ───── */
+.table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  font-weight: 500;
+  background: var(--bg-2);
+}
+tr:last-child td { border-bottom: none; }
+td.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); }
+
+/* ───── DIAGRAMS ───── */
+.diagram-wrap {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+}
+.mermaid { font-family: 'JetBrains Mono', monospace !important; }
+
+/* ───── UI MOCKUP ───── */
+.mockup-frame {
+  background: #06080a;
+  border: 1px solid var(--line-bright);
+  border-radius: 12px;
+  padding: 0;
+  margin: 1.5rem 0;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0, 225, 255, 0.1);
+  overflow: hidden;
+}
+.mockup-titlebar {
+  background: var(--bg-3);
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.mockup-titlebar .dots { display: flex; gap: 6px; }
+.mockup-titlebar .dots span { width: 11px; height: 11px; border-radius: 50%; }
+.mockup-titlebar .dots .r { background: #ff5f57; }
+.mockup-titlebar .dots .y { background: #febc2e; }
+.mockup-titlebar .dots .g { background: #28c840; }
+.mockup-titlebar .url {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.mockup-app { padding: 0; background: #0a0e12; }
+
+.mockup-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  flex-wrap: wrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-dim);
+}
+.status-pill .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.status-pill .dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.status-pill .dot.warn { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.status-pill .dot.err { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.status-pill .v { color: #fff; }
+
+.bpm-display {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.beat-orb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 16px var(--cyan);
+  animation: beat 0.469s ease-out infinite; /* 128 BPM */
+}
+@keyframes beat {
+  0% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0.5; }
+}
+.bpm-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.bpm-num span { font-size: 0.7em; color: var(--text-dim); font-weight: 400; }
+
+.mockup-main {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+}
+@media (max-width: 720px) {
+  .mockup-main { grid-template-columns: 1fr; }
+}
+
+.mockup-stage { padding: 1.25rem; }
+.mockup-side {
+  padding: 1.25rem;
+  border-left: 1px solid var(--line);
+  background: var(--bg-2);
+}
+@media (max-width: 720px) {
+  .mockup-side { border-left: none; border-top: 1px solid var(--line); }
+}
+
+.now-playing {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(90deg, rgba(255, 43, 177, 0.08), transparent);
+  border-left: 2px solid var(--magenta);
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 1.25rem;
+}
+.now-playing .label-tiny {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--magenta);
+  margin-bottom: 0.2rem;
+}
+.now-playing .track {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.now-playing .artist {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.scenes-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+}
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 1.25rem;
+}
+@media (max-width: 480px) {
+  .scene-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.scene {
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.scene:hover { border-color: var(--cyan); color: #fff; }
+.scene.active {
+  border-color: var(--cyan);
+  background: linear-gradient(135deg, rgba(0,225,255,0.15), rgba(0,225,255,0.02));
+  color: #fff;
+  box-shadow: 0 0 0 1px var(--cyan), 0 0 20px rgba(0,225,255,0.15);
+}
+.scene .key {
+  font-size: 8px;
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+}
+.scene.active .key { color: var(--cyan); }
+.scene .name { font-size: 11px; line-height: 1.2; }
+.scene .swatch {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; border-radius: 2px;
+}
+
+.zones-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .zones-row { grid-template-columns: repeat(2, 1fr); }
+}
+.zone {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+.zone .zname {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+.zone .zstatus {
+  font-size: 10px;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.zone .zstatus .d { width: 5px; height: 5px; background: var(--green); border-radius: 50%; }
+.zone.off .zstatus { color: var(--text-faint); }
+.zone.off .zstatus .d { background: var(--text-faint); box-shadow: none; }
+.zone .zbar { margin-top: 0.5rem; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.zone .zbar .fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta)); }
+
+.side-control { margin-bottom: 1.25rem; }
+.side-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+}
+.side-label .v { color: var(--cyan); }
+.slider {
+  width: 100%; height: 4px; background: var(--line); border-radius: 2px;
+  position: relative; cursor: pointer;
+}
+.slider .fill {
+  height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  border-radius: 2px;
+}
+.slider .thumb {
+  position: absolute; top: -5px; width: 14px; height: 14px;
+  background: #fff; border-radius: 50%; transform: translateX(-50%);
+  box-shadow: 0 0 0 3px var(--bg-2), 0 0 12px var(--cyan);
+}
+.hue-track {
+  width: 100%; height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg, #ff0040 0%, #ffaa00 16%, #ffff00 33%, #00ff80 50%, #00aaff 66%, #6600ff 83%, #ff0040 100%);
+  position: relative; cursor: pointer;
+}
+.hue-track .thumb {
+  position: absolute; top: -3px; width: 18px; height: 18px;
+  background: #fff; border-radius: 50%; transform: translateX(-50%);
+  box-shadow: 0 0 0 2px var(--bg-2), 0 2px 8px rgba(0,0,0,0.6);
+}
+.kill-btn {
+  width: 100%; padding: 0.85rem;
+  background: linear-gradient(135deg, #2a0a10, #1a0508);
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.kill-btn:hover {
+  background: var(--red); color: #fff;
+  box-shadow: 0 0 24px rgba(255, 77, 94, 0.4);
+}
+
+.toggle-row {
+  display: flex; gap: 6px;
+  margin-bottom: 1rem;
+}
+.toggle {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+.toggle.on {
+  border-color: var(--cyan); color: var(--cyan); background: rgba(0,225,255,0.06);
+}
+
+/* ───── NAV ───── */
+nav.toc {
+  position: sticky;
+  top: 0;
+  background: rgba(10, 14, 18, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 0;
+  margin-bottom: 2rem;
+  z-index: 100;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+nav.toc .inner {
+  display: inline-flex;
+  gap: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0 1.5rem;
+}
+nav.toc a {
+  color: var(--text-faint);
+  border-bottom: none;
+}
+nav.toc a:hover { color: var(--cyan); }
+nav.toc a .num { color: var(--cyan); margin-right: 0.4rem; font-weight: 700; }
+
+/* ───── HERO STATS ───── */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1.5rem 0 2.5rem;
+}
+.hero-stat {
+  background: var(--bg-2);
+  padding: 1.25rem;
+}
+.hero-stat .num {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+.hero-stat .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ───── PULSEFORGE preview strip ───── */
+.led-strip {
+  display: flex;
+  gap: 4px;
+  padding: 1.25rem;
+  background: #06080a;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.led-pixel {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px currentColor;
+  color: var(--cyan);
+  animation: ledwave 1.2s ease-in-out infinite;
+}
+@keyframes ledwave {
+  0%, 100% { color: #4d2bff; transform: scale(0.55); opacity: 0.6; }
+  40% { color: #00e1ff; transform: scale(1.0); opacity: 1; }
+  60% { color: #ff2bb1; transform: scale(1.15); opacity: 1; }
+}
+.led-pixel:nth-child(1)  { animation-delay: 0.00s; }
+.led-pixel:nth-child(2)  { animation-delay: 0.04s; }
+.led-pixel:nth-child(3)  { animation-delay: 0.08s; }
+.led-pixel:nth-child(4)  { animation-delay: 0.12s; }
+.led-pixel:nth-child(5)  { animation-delay: 0.16s; }
+.led-pixel:nth-child(6)  { animation-delay: 0.20s; }
+.led-pixel:nth-child(7)  { animation-delay: 0.24s; }
+.led-pixel:nth-child(8)  { animation-delay: 0.28s; }
+.led-pixel:nth-child(9)  { animation-delay: 0.32s; }
+.led-pixel:nth-child(10) { animation-delay: 0.36s; }
+.led-pixel:nth-child(11) { animation-delay: 0.40s; }
+.led-pixel:nth-child(12) { animation-delay: 0.44s; }
+.led-pixel:nth-child(13) { animation-delay: 0.48s; }
+.led-pixel:nth-child(14) { animation-delay: 0.52s; }
+.led-pixel:nth-child(15) { animation-delay: 0.56s; }
+.led-pixel:nth-child(16) { animation-delay: 0.60s; }
+.led-pixel:nth-child(17) { animation-delay: 0.64s; }
+.led-pixel:nth-child(18) { animation-delay: 0.68s; }
+.led-pixel:nth-child(19) { animation-delay: 0.72s; }
+.led-pixel:nth-child(20) { animation-delay: 0.76s; }
+.led-pixel:nth-child(21) { animation-delay: 0.80s; }
+.led-pixel:nth-child(22) { animation-delay: 0.84s; }
+.led-pixel:nth-child(23) { animation-delay: 0.88s; }
+.led-pixel:nth-child(24) { animation-delay: 0.92s; }
+
+.forge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+}
+@media (max-width: 720px) { .forge-grid { grid-template-columns: 1fr; } }
+.forge-panel { background: var(--bg-2); padding: 1rem; }
+.forge-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text);
+  background: transparent;
+  padding: 0;
+}
+.forge-preview-stage {
+  background: #06080a;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.75rem;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.preview-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: flex;
+  justify-content: space-between;
+}
+.preview-label .v { color: var(--green); }
+
+.forge-prompt-bar {
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.zone-select {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  color: var(--cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.prompt-input {
+  flex: 1;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  padding: 0.65rem 0.85rem;
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  min-width: 200px;
+}
+.generate-btn {
+  background: linear-gradient(135deg, var(--cyan), #0099bb);
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 4px;
+  color: #06080a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.validate-row {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line);
+  background: var(--bg-3);
+}
+.validate-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px;
+  border-radius: 100px;
+  background: rgba(56, 224, 120, 0.08);
+  border: 1px solid rgba(56, 224, 120, 0.3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 0.05em;
+}
+.validate-chip.warn {
+  background: rgba(255, 182, 72, 0.08);
+  border-color: rgba(255, 182, 72, 0.3);
+  color: var(--amber);
+}
+.validate-chip::before {
+  content: '✓'; font-weight: 700;
+}
+.validate-chip.warn::before { content: '!'; }
+
+.refine-row {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.refine-chip {
+  background: transparent;
+  border: 1px solid var(--line-bright);
+  color: var(--text-dim);
+  padding: 5px 11px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.refine-chip:hover { color: var(--cyan); border-color: var(--cyan); }
+.refine-input {
+  flex: 1;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  padding: 0.5rem 0.85rem;
+  border-radius: 100px;
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  min-width: 180px;
+}
+
+/* ───── PULSEMAP canvas ───── */
+.map-frame {
+  background: #06080a;
+  display: grid;
+  grid-template-columns: 200px 1fr 220px;
+}
+@media (max-width: 820px) {
+  .map-frame { grid-template-columns: 1fr; }
+}
+.map-side {
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  padding: 1rem;
+  font-size: 12px;
+}
+.map-side.right { border-right: none; border-left: 1px solid var(--line); }
+@media (max-width: 820px) {
+  .map-side { border-right: none; border-bottom: 1px solid var(--line); }
+  .map-side.right { border-left: none; border-top: 1px solid var(--line); }
+}
+.map-stage {
+  background:
+    linear-gradient(rgba(0,225,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,225,255,0.04) 1px, transparent 1px),
+    radial-gradient(ellipse at center, #0a0e12 0%, #06080a 100%);
+  background-size: 24px 24px, 24px 24px, 100% 100%;
+  min-height: 360px;
+  padding: 1rem;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px dashed var(--line);
+  cursor: pointer;
+}
+.layer-row.active { color: #fff; background: rgba(0,225,255,0.06); border-radius: 3px; }
+.layer-row .lswatch { width: 9px; height: 9px; border-radius: 2px; }
+.layer-row .lcount { margin-left: auto; color: var(--text-faint); font-size: 10px; }
+
+.prop-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.prop-row .pkey { color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; font-size: 9.5px; }
+.prop-row .pval { color: var(--cyan); }
+
+.map-toolbar {
+  display: flex; gap: 6px; align-items: center;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  flex-wrap: wrap;
+}
+.tool-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.tool-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,225,255,0.05); }
+.tool-divider { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+
+/* ───── PROMPT LIBRARY mockup ───── */
+.feel-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  background: var(--bg-2);
+  align-items: start;
+}
+@media (max-width: 600px) { .feel-grid { grid-template-columns: 1fr; } }
+
+.mood-pad-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+
+.soul-sliders { display: flex; flex-direction: column; gap: 0.55rem; min-width: 180px; }
+.soul-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 28px;
+  align-items: center;
+  gap: 0.6rem;
+}
+.soul-row .skey {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  color: var(--text-dim);
+}
+.soul-row .strack {
+  height: 3px; background: var(--line); border-radius: 2px; overflow: hidden;
+}
+.soul-row .sfill {
+  height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+}
+.soul-row .sval {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--cyan);
+  text-align: right;
+}
+
+.genre-row, .idiom-row {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line);
+  align-items: center;
+}
+.genre-row { background: var(--bg-3); }
+.idiom-row { background: var(--bg-2); }
+.genre-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--line-bright);
+  border-radius: 100px;
+  color: var(--text-dim);
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.genre-chip.active {
+  border-color: var(--magenta);
+  color: var(--magenta);
+  background: rgba(255, 43, 177, 0.08);
+}
+.idiom-chip {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  background: var(--bg-3);
+  color: var(--text);
+  border-radius: 4px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.idiom-chip:hover { border-color: var(--cyan); color: var(--cyan); }
+
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 600px) { .variant-grid { grid-template-columns: repeat(2, 1fr); } }
+.variant-card {
+  border: 1px solid var(--line);
+  background: #06080a;
+  border-radius: 5px;
+  padding: 0.5rem;
+  position: relative;
+  cursor: pointer;
+}
+.variant-card:hover { border-color: var(--line-bright); }
+.variant-card.active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan), 0 0 18px rgba(0, 225, 255, 0.15);
+}
+.variant-card .vkey {
+  position: absolute; top: 5px; right: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  font-weight: 700;
+}
+.variant-card.active .vkey { color: var(--cyan); }
+.variant-strip { display: flex; gap: 1px; padding: 0.6rem 0 0.3rem; justify-content: center; }
+.variant-strip .vpx {
+  width: 5px; height: 14px;
+  border-radius: 1px;
+  box-shadow: 0 0 6px currentColor;
+}
+.variant-card .vname {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ───── FOOTER ───── */
+footer.foot {
+  border-top: 1px solid var(--line);
+  padding-top: 2rem;
+  margin-top: 4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <div class="inner">
+    <a href="#tldr"><span class="num">01</span>TL;DR</a>
+    <a href="#arch"><span class="num">02</span>Architecture</a>
+    <a href="#components"><span class="num">03</span>Components</a>
+    <a href="#bom"><span class="num">04</span>BOM</a>
+    <a href="#conductor"><span class="num">05</span>Conductor</a>
+    <a href="#ui"><span class="num">06</span>Custom UI</a>
+    <a href="#contract"><span class="num">07</span>PB Contract</a>
+    <a href="#reliability"><span class="num">08</span>Reliability</a>
+    <a href="#network"><span class="num">09</span>Network</a>
+    <a href="#build"><span class="num">10</span>Build Plan</a>
+    <a href="#forge"><span class="num">11</span>PULSEFORGE</a>
+    <a href="#map"><span class="num">12</span>PULSEMAP</a>
+    <a href="#prompts"><span class="num">13</span>Prompt Library</a>
+    <a href="#trust"><span class="num">14</span>Trust Stack</a>
+    <a href="#lumencanvas"><span class="num">15</span>LumenCanvas</a>
+    <a href="#risks"><span class="num">16</span>Risks</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<header class="masthead">
+  <div class="crumb">
+    <span class="dot"></span>
+    <span>Spec · v0.3 · Draft</span>
+    <span style="color:var(--line-bright)">/</span>
+    <span>Always in Flux Industries</span>
+    <span style="color:var(--line-bright)">/</span>
+    <span>Internal</span>
+  </div>
+
+  <h1 class="title">PULSE</h1>
+  <div class="subtitle">Pixelblaze Unified Live Sync Engine — a rock-solid stage rig for music-reactive lighting driven by Pioneer Pro DJ Link, with a custom touchscreen control surface replacing OSC/Pilot.</div>
+
+  <div class="meta-grid">
+    <div class="item"><div class="label">Owner</div><div class="value">Alie / AiF</div></div>
+    <div class="item"><div class="label">Doc version</div><div class="value cyan">0.3 — Spec</div></div>
+    <div class="item"><div class="label">Status</div><div class="value amber">Pre-build</div></div>
+    <div class="item"><div class="label">Target</div><div class="value">Stage / Event prod</div></div>
+    <div class="item"><div class="label">Tech</div><div class="value">Node.js / Pixelblaze V3</div></div>
+  </div>
+</header>
+
+<!-- ═════════════════ TL;DR ═════════════════ -->
+<section id="tldr">
+  <div class="section-tag">01 · Overview</div>
+  <h2>What it is, in one breath</h2>
+  <p>PULSE is a small Node.js service ("the Conductor") that joins the Pro DJ Link network as a virtual CDJ, listens to the beat grid coming off the Pioneer rig, and broadcasts a tiny set of synchronized variables to every Pixelblaze on the lighting network — so every LED segment in the room renders in perfect phase with the music, on every beat, on every bar, without ever asking the network for permission frame-by-frame.</p>
+  <p>On top of that runs a custom web-based control surface (PULSEDECK) — a tablet-friendly UI that replaces OSC/Pilot for human-driven scene selection, master brightness, hue offsets, kill switches, and zone control. It's the single pane of glass that ops uses live.</p>
+  <p><strong>Two design-time tools complete the system:</strong> <em>PULSEFORGE</em> generates Pixelblaze patterns from natural-language prompts with live in-browser preview, geometry awareness, and contract validation. <em>PULSEMAP</em> is a visual canvas for laying out the physical rig — strips, matrices, vehicle-mounted runs — and exports both Pixelblaze pixel maps and the topology JSON that every other layer of PULSE consumes. Same data model across runtime and authoring.</p>
+  <p><strong>v0.3 adds the creative depth and trust layers:</strong> the <em>Prompt Library</em> (mood wheel, genre presets, soul sliders, named animation idioms, A/B variant generation) turns PULSEFORGE from a code helper into a creative instrument. The <em>Trust Stack</em> (deterministic browser-based Pixelblaze simulator + AST/contract validator) is what makes AI-generated patterns shippable to stage hardware without manual review. And a <em>LumenCanvas integration roadmap</em> (CLASP protocol bus, LATCH visual flow programming) maps the path to standing on Moheeb's open infrastructure instead of hand-rolling forever.</p>
+
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="num">&lt;5ms</span><span class="lbl">Beat phase drift between PBs</span></div>
+    <div class="hero-stat"><span class="num">100+</span><span class="lbl">FPS pattern frame rate</span></div>
+    <div class="hero-stat"><span class="num">∞</span><span class="lbl">Pixelblazes supported</span></div>
+    <div class="hero-stat"><span class="num">3</span><span class="lbl">Fallback modes</span></div>
+    <div class="hero-stat"><span class="num">1</span><span class="lbl">Touchscreen runs the rig</span></div>
+  </div>
+
+  <div class="callout cyan">
+    <div class="callout-label">Design philosophy</div>
+    <p style="margin:0">Centralize the <strong>beat detection</strong>. Decentralize the <strong>rendering</strong>. The Conductor publishes <em>bpm</em> + <em>beatAnchorMs</em> at low frequency. Each Pixelblaze computes its own phase using a Firestorm-synced clock. No per-frame network dependency. No drift between segments. Network can hiccup for seconds and the show keeps grooving on the last-known anchor.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ ARCHITECTURE ═════════════════ -->
+<section id="arch">
+  <div class="section-tag">02 · Signal Flow</div>
+  <h2>System architecture</h2>
+  <p>Four layers, top-down. The DJ rig is the source of truth for time. The Conductor translates it. Firestorm orchestrates pattern banks. The Pixelblazes render. PULSEDECK rides on top as the human input.</p>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+  classDef src fill:#1a0d18,stroke:#ff2bb1,color:#fff,stroke-width:2px
+  classDef bridge fill:#0a1a1f,stroke:#00e1ff,color:#fff,stroke-width:2px
+  classDef render fill:#0f1419,stroke:#38e078,color:#fff,stroke-width:1.5px
+  classDef human fill:#1a1308,stroke:#ffb648,color:#fff,stroke-width:2px
+
+  CDJ["🎛 Pioneer CDJs + DJM"]:::src
+  Link[("Pro DJ Link · UDP 50000-50002")]:::src
+  BLT["Beat Link Trigger<br/>(virtual player 7)"]:::bridge
+  Cond["⚙️ PULSE Conductor<br/>Node.js bridge"]:::bridge
+  FS["Firestorm<br/>discovery + pattern dispatch"]:::bridge
+  Deck["📱 PULSEDECK<br/>Custom web UI"]:::human
+  PB1["Pixelblaze · Zone A"]:::render
+  PB2["Pixelblaze · Zone B"]:::render
+  PB3["Pixelblaze · Zone C"]:::render
+  PBN["Pixelblaze · Zone N"]:::render
+
+  CDJ -->|ethernet| Link
+  Link --> BLT
+  BLT -->|OSC :9000<br/>/beat /bar /bpm /track| Cond
+  Deck <-->|WebSocket :8080<br/>scene · brightness · kill| Cond
+  Cond -->|ws setVars<br/>bpm, beatAnchorMs, energy| PB1
+  Cond -->|ws setVars| PB2
+  Cond -->|ws setVars| PB3
+  Cond -->|ws setVars| PBN
+  Cond -->|HTTP POST<br/>programName, brightness| FS
+  FS -.->|time sync beacon| PB1
+  FS -.->|time sync beacon| PB2
+  FS -.->|time sync beacon| PB3
+  FS -.->|time sync beacon| PBN
+    </pre>
+  </div>
+
+  <h3>Why this shape</h3>
+  <p>The <strong>Conductor sits in the middle on purpose</strong>. BLT is the beat brain. Firestorm is the pattern catalog. The PBs are the renderers. PULSEDECK is the human. None of these speak each other's protocols natively. The Conductor is the only thing that needs to know all four, and it stays small (a few hundred lines of Node) so it's auditable, swappable, and easy to debug at 2am.</p>
+
+  <h3>Beat phase timing diagram</h3>
+  <p>This is the critical bit. Below shows how a single beat propagates and why each PB ends up phase-locked despite asynchronous arrival times.</p>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+  participant DJM as Pioneer DJM
+  participant BLT as Beat Link Trigger
+  participant C as Conductor
+  participant PB1 as Pixelblaze A
+  participant PB2 as Pixelblaze B
+
+  Note over DJM,PB2: Time T₀ — beat fires on Pioneer
+  DJM->>BLT: Pro DJ Link beat packet
+  BLT->>C: OSC /beat (bpm=128)
+  Note over C: Captures now() as anchor
+  par broadcast (parallel)
+    C->>PB1: setVars {bpm, beatAnchorMs}
+    C->>PB2: setVars {bpm, beatAnchorMs}
+  end
+  Note over PB1,PB2: Each PB now derives beatPhase LOCALLY from its Firestorm-synced clock
+  loop every render frame
+    PB1->>PB1: phase = ((time - anchor) mod interval) / interval
+    PB2->>PB2: phase = ((time - anchor) mod interval) / interval
+  end
+  Note over PB1,PB2: Phase identical within ±5ms across all PBs<br/>even if next setVars never arrives
+    </pre>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">The key insight</div>
+    <p style="margin:0">If we sent <em>"now beat!"</em> on every beat, jitter from WiFi, Node event loop, and PB packet processing would add a visible ±20-80ms wobble. By sending <em>"the beat grid is at this anchor at this BPM"</em> once per beat and letting each PB extrapolate from a synchronized clock, jitter disappears. Visual is rock solid even if a single message drops.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ COMPONENTS ═════════════════ -->
+<section id="components">
+  <div class="section-tag">03 · Components</div>
+  <h2>Who does what</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Role</th><th>Host</th><th>Failure impact</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Pioneer rig</strong></td>
+          <td>Source of truth for tempo + beat grid</td>
+          <td class="mono">DJ booth</td>
+          <td>No DJ → fallback to mic or manual BPM</td>
+        </tr>
+        <tr>
+          <td><strong>Beat Link Trigger</strong></td>
+          <td>Virtual CDJ. Decodes Pro DJ Link, emits OSC</td>
+          <td class="mono">FOH Mac/NUC</td>
+          <td>Stops emitting → Conductor falls back</td>
+        </tr>
+        <tr>
+          <td><strong>Conductor</strong></td>
+          <td>Bridge: OSC in → PB setVars + Firestorm out</td>
+          <td class="mono">Same machine as BLT, or Pi</td>
+          <td>Restarts in &lt;3s via systemd; PBs hold last anchor and keep rendering</td>
+        </tr>
+        <tr>
+          <td><strong>Firestorm</strong></td>
+          <td>PB auto-discovery, pattern dispatch, clock sync</td>
+          <td class="mono">Same Pi/NUC</td>
+          <td>PBs drift over minutes; current scene continues</td>
+        </tr>
+        <tr>
+          <td><strong>Pixelblazes</strong></td>
+          <td>Render LEDs. Compute phase locally</td>
+          <td class="mono">In-fixture</td>
+          <td>Per-zone only; rest of rig unaffected</td>
+        </tr>
+        <tr>
+          <td><strong>PULSEDECK</strong></td>
+          <td>Human control surface — scenes, brightness, kill</td>
+          <td class="mono">Tablet browser</td>
+          <td>Show keeps running on last scene; reopen browser</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═════════════════ BOM ═════════════════ -->
+<section id="bom">
+  <div class="section-tag">04 · Bill of Materials</div>
+  <h2>Hardware shopping list</h2>
+
+  <h4>Required</h4>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Spec</th><th>Qty</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Pioneer CDJs</td><td>CDJ-2000NXS or newer; CDJ-3000 best</td><td class="mono">≥1</td><td>XDJ-RX/RX2 won't work. XDJ-XZ ok.</td></tr>
+        <tr><td>Pioneer DJM mixer</td><td>Any DJM with Link</td><td class="mono">1</td><td>Provides Link network</td></tr>
+        <tr><td>Gigabit switch</td><td>Unmanaged, 8-port</td><td class="mono">1</td><td>Netgear GS308 or similar</td></tr>
+        <tr><td>WiFi AP for PBs</td><td>2.4 GHz or dual-band; own SSID</td><td class="mono">1</td><td>UniFi U6-Lite is overkill but reliable</td></tr>
+        <tr><td>Conductor host</td><td>Mac mini, Intel NUC, or Pi 5 (8GB)</td><td class="mono">1</td><td>Headless ok; runs BLT + Conductor + Firestorm</td></tr>
+        <tr><td>Pixelblaze V3</td><td>Current firmware</td><td class="mono">1 per zone</td><td>Standard or Pico</td></tr>
+        <tr><td>Tablet for PULSEDECK</td><td>iPad / Android / Windows tablet</td><td class="mono">1</td><td>Just needs a browser</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Optional but recommended</h4>
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><td>Pixelblaze Sensor Board</td><td>For one "leader" PB</td><td class="mono">1</td><td>Adds mic-based energy/frequency data even when DJ rig is absent</td></tr>
+        <tr><td>UPS</td><td>For Conductor + switch</td><td class="mono">1</td><td>Bridges short power blips, keeps show running</td></tr>
+        <tr><td>Wired ethernet to tablet</td><td>USB-C adapter</td><td class="mono">1</td><td>Eliminates WiFi as a failure mode for the control surface</td></tr>
+        <tr><td>Spare Conductor host</td><td>Same model</td><td class="mono">1</td><td>Cold-spare. SSD imaged identical.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═════════════════ CONDUCTOR ═════════════════ -->
+<section id="conductor">
+  <div class="section-tag">05 · The Conductor</div>
+  <h2>What the bridge actually does</h2>
+  <p>The Conductor is a single Node.js process. It runs forever, restarts on crash, holds four concerns: <strong>(1)</strong> listen to BLT over OSC, <strong>(2)</strong> maintain WebSocket connections to every Pixelblaze, <strong>(3)</strong> expose a WebSocket API for PULSEDECK, <strong>(4)</strong> talk to Firestorm's HTTP API when scenes need to swap.</p>
+
+  <h3>Internal state machine</h3>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Booting
+  Booting --> Discovering: PBs found via Firestorm
+  Discovering --> LiveDJ: BLT sends /beat
+  Discovering --> SensorMode: No BLT, sensor PB present
+  Discovering --> FreeRun: No BLT, no sensor → manual BPM
+  LiveDJ --> SensorMode: BLT silent &gt; 5s
+  SensorMode --> LiveDJ: BLT resumes
+  SensorMode --> FreeRun: Sensor PB drops
+  FreeRun --> LiveDJ: BLT resumes
+  LiveDJ --> Panic: Operator hits kill
+  SensorMode --> Panic: Operator hits kill
+  FreeRun --> Panic: Operator hits kill
+  Panic --> LiveDJ: Operator clears
+    </pre>
+  </div>
+
+  <h3>Three fallback modes</h3>
+  <ul>
+    <li><strong>Live DJ mode</strong> — BLT is feeding beats. This is the normal state. BPM, beat anchor, downbeat, bar, track signature are all flowing.</li>
+    <li><strong>Sensor mode</strong> — BLT silent for 5+ seconds (DJ unplugged the CDJ, network issue, between sets). The Conductor reads <em>frequencyData</em> + <em>energyAverage</em> from a designated "leader" Pixelblaze with the Sensor Board and synthesizes a coarse BPM via autocorrelation, or simply forwards energy as <em>energy</em> setVar and stops sending beat anchors. Patterns gracefully degrade.</li>
+    <li><strong>Free run mode</strong> — No DJ, no sensor. PULSEDECK exposes a "tap tempo" pad. Operator taps and that becomes the BPM. Useful for soundcheck, walk-in music played from the venue PA, ambient sets.</li>
+  </ul>
+
+  <h3>The core code sketch</h3>
+<pre data-label="conductor.js — bridge core"><code><span class="kw">const</span> osc = <span class="fn">require</span>(<span class="str">'osc'</span>)
+<span class="kw">const</span> WebSocket = <span class="fn">require</span>(<span class="str">'ws'</span>)
+<span class="kw">const</span> { discoverPixelblazes } = <span class="fn">require</span>(<span class="str">'./firestorm-client'</span>)
+
+<span class="kw">let</span> bpm = <span class="num">128</span>, beatAnchorMs = <span class="fn">Date</span>.now(), bar = <span class="num">0</span>, mode = <span class="str">'freerun'</span>
+<span class="kw">let</span> pbs = []  <span class="com">// WebSocket connections, keyed by ID</span>
+
+<span class="com">// 1. discover Pixelblazes via Firestorm</span>
+<span class="fn">discoverPixelblazes</span>().then(list =&gt; {
+  pbs = list.map(pb =&gt; ({ id: pb.id, ip: pb.ip, ws: <span class="fn">connect</span>(pb.ip) }))
+})
+
+<span class="com">// 2. OSC inbound from BLT</span>
+<span class="kw">const</span> udp = <span class="kw">new</span> osc.<span class="fn">UDPPort</span>({ localPort: <span class="num">9000</span> })
+udp.on(<span class="str">'message'</span>, msg =&gt; {
+  <span class="kw">if</span> (msg.address === <span class="str">'/beat'</span>) {
+    bpm = msg.args[<span class="num">0</span>]
+    beatAnchorMs = <span class="fn">Date</span>.now()
+    mode = <span class="str">'live'</span>
+    <span class="fn">broadcastVars</span>({ bpm, beatAnchorMs, mode: <span class="num">1</span> })
+  }
+  <span class="kw">if</span> (msg.address === <span class="str">'/bar'</span>) bar = msg.args[<span class="num">0</span>]
+  <span class="kw">if</span> (msg.address === <span class="str">'/track/changed'</span>) <span class="fn">handleTrackChange</span>(msg.args[<span class="num">0</span>])
+})
+udp.<span class="fn">open</span>()
+
+<span class="com">// 3. WebSocket API for PULSEDECK</span>
+<span class="kw">const</span> wss = <span class="kw">new</span> WebSocket.<span class="fn">Server</span>({ port: <span class="num">8080</span> })
+wss.on(<span class="str">'connection'</span>, ws =&gt; {
+  ws.on(<span class="str">'message'</span>, raw =&gt; {
+    <span class="kw">const</span> cmd = <span class="fn">JSON</span>.parse(raw)
+    <span class="kw">if</span> (cmd.type === <span class="str">'scene'</span>) <span class="fn">setScene</span>(cmd.scene)
+    <span class="kw">if</span> (cmd.type === <span class="str">'brightness'</span>) <span class="fn">setBrightness</span>(cmd.zones, cmd.value)
+    <span class="kw">if</span> (cmd.type === <span class="str">'kill'</span>) <span class="fn">panicAllBlack</span>()
+    <span class="kw">if</span> (cmd.type === <span class="str">'tap'</span>) <span class="fn">handleTapTempo</span>(cmd.t)
+  })
+})
+
+<span class="com">// 4. heartbeat — keeps PBs aware we're alive even between beats</span>
+<span class="fn">setInterval</span>(() =&gt; <span class="fn">broadcastVars</span>({ bpm, beatAnchorMs, mode: modeNum(mode) }), <span class="num">250</span>)
+
+<span class="com">// 5. watchdog — switch to fallback if BLT silent</span>
+<span class="fn">setInterval</span>(() =&gt; {
+  <span class="kw">if</span> (<span class="fn">Date</span>.now() - lastBltMs &gt; <span class="num">5000</span> &amp;&amp; mode === <span class="str">'live'</span>) mode = <span class="str">'sensor'</span>
+}, <span class="num">1000</span>)</code></pre>
+
+  <div class="callout cyan">
+    <div class="callout-label">Why a 250ms heartbeat</div>
+    <p style="margin:0">Pixelblaze WebSocket connections will drop without traffic. A cheap 250ms heartbeat with the current bpm+anchor keeps every socket alive, makes reconnection unnecessary in most cases, and lets PBs detect Conductor death (no traffic for 2s → switch to last-known-good autonomous mode).</p>
+  </div>
+</section>
+
+<!-- ═════════════════ CUSTOM UI ═════════════════ -->
+<section id="ui">
+  <div class="section-tag">06 · PULSEDECK</div>
+  <h2>The custom control surface</h2>
+  <p>This is what replaces OSC/Pilot. It's a web app served by the Conductor itself — point any tablet browser at <em>http://conductor.local:8080</em> and you've got the whole rig in one screen. Below is a mockup of the v1 layout. Everything is touch-first, no keyboard required.</p>
+
+  <div class="mockup-frame">
+    <div class="mockup-titlebar">
+      <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="url">http://conductor.local:8080 — PULSEDECK</div>
+    </div>
+    <div class="mockup-app">
+
+      <!-- status bar -->
+      <div class="mockup-statusbar">
+        <span class="status-pill"><span class="dot ok"></span>BLT <span class="v">linked</span></span>
+        <span class="status-pill"><span class="dot ok"></span>Firestorm <span class="v">up</span></span>
+        <span class="status-pill"><span class="dot ok"></span>PBs <span class="v">8/8</span></span>
+        <span class="status-pill"><span class="dot warn"></span>Mode <span class="v">LIVE</span></span>
+        <div class="bpm-display">
+          <div class="beat-orb"></div>
+          <div class="bpm-num">128.0<span> BPM</span></div>
+        </div>
+      </div>
+
+      <div class="mockup-main">
+        <!-- stage area -->
+        <div class="mockup-stage">
+
+          <div class="now-playing">
+            <div class="label-tiny">Now playing · Player 2</div>
+            <div class="track">Strobe (Deadmau5) — Mix Edit</div>
+            <div class="artist">Auto-scene: WHITEOUT · bar 17/64</div>
+          </div>
+
+          <div class="scenes-label"><span>Scenes</span><span>tap to launch · long-press to edit</span></div>
+          <div class="scene-grid">
+            <div class="scene active"><div class="key">Q1</div><div class="name">Pulse White</div><div class="swatch" style="background:#fff"></div></div>
+            <div class="scene"><div class="key">Q2</div><div class="name">Cyan Rain</div><div class="swatch" style="background:#00e1ff"></div></div>
+            <div class="scene"><div class="key">Q3</div><div class="name">Magenta Strobe</div><div class="swatch" style="background:#ff2bb1"></div></div>
+            <div class="scene"><div class="key">Q4</div><div class="name">Bar Sweep</div><div class="swatch" style="background:#ffb648"></div></div>
+            <div class="scene"><div class="key">Q5</div><div class="name">Drop Punch</div><div class="swatch" style="background:#ff4d5e"></div></div>
+            <div class="scene"><div class="key">Q6</div><div class="name">Slow Wave</div><div class="swatch" style="background:#6633ff"></div></div>
+            <div class="scene"><div class="key">Q7</div><div class="name">Energy Bars</div><div class="swatch" style="background:#38e078"></div></div>
+            <div class="scene"><div class="key">Q8</div><div class="name">Black Hold</div><div class="swatch" style="background:#222"></div></div>
+          </div>
+
+          <div class="scenes-label"><span>Zones</span><span>per-fixture brightness</span></div>
+          <div class="zones-row">
+            <div class="zone"><div class="zname">Stage L</div><div class="zstatus"><span class="d"></span>ONLINE</div><div class="zbar"><div class="fill" style="width:80%"></div></div></div>
+            <div class="zone"><div class="zname">Stage R</div><div class="zstatus"><span class="d"></span>ONLINE</div><div class="zbar"><div class="fill" style="width:80%"></div></div></div>
+            <div class="zone"><div class="zname">Truss</div><div class="zstatus"><span class="d"></span>ONLINE</div><div class="zbar"><div class="fill" style="width:100%"></div></div></div>
+            <div class="zone off"><div class="zname">DJ Booth</div><div class="zstatus"><span class="d"></span>STANDBY</div><div class="zbar"><div class="fill" style="width:0%"></div></div></div>
+          </div>
+        </div>
+
+        <!-- side controls -->
+        <div class="mockup-side">
+          <div class="side-control">
+            <div class="side-label"><span>Master</span><span class="v">80%</span></div>
+            <div class="slider"><div class="fill" style="width:80%"></div><div class="thumb" style="left:80%"></div></div>
+          </div>
+          <div class="side-control">
+            <div class="side-label"><span>Hue offset</span><span class="v">+12°</span></div>
+            <div class="hue-track"><div class="thumb" style="left:53%"></div></div>
+          </div>
+          <div class="side-control">
+            <div class="side-label"><span>Strobe rate</span><span class="v">1/4</span></div>
+            <div class="slider"><div class="fill" style="width:35%"></div><div class="thumb" style="left:35%"></div></div>
+          </div>
+
+          <div class="side-label" style="margin-top:1.5rem">Mode lock</div>
+          <div class="toggle-row">
+            <button class="toggle on">Live</button>
+            <button class="toggle">Sensor</button>
+            <button class="toggle">Tap</button>
+          </div>
+
+          <div class="side-label">Beat divider</div>
+          <div class="toggle-row">
+            <button class="toggle">½</button>
+            <button class="toggle on">1</button>
+            <button class="toggle">2</button>
+            <button class="toggle">4</button>
+          </div>
+
+          <button class="kill-btn">⌧ KILL · ALL BLACK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>UI feature list</h3>
+  <p><strong>Top status bar.</strong> Always visible. Tells you in one glance: BLT connected? Firestorm up? How many PBs online vs configured? Current mode? Live BPM with a pulsing orb that visually beats. If any pill goes red, ops sees it instantly without leaving the active scene.</p>
+
+  <p><strong>Now Playing card.</strong> Pulls track name + player number from BLT track metadata. Shows the auto-scene assigned to this track (if any). Shows current bar position. This is huge for ops — they know what the DJ is doing without watching the CDJs.</p>
+
+  <p><strong>Scene grid.</strong> 8 quick-launch slots (Q1–Q8), expandable to banks via swipe. Tap to launch. Long-press to edit (rename, pick PB program from Firestorm catalog, set default colors, set per-zone overrides). Active scene is outlined in cyan. Color swatches give a visual cue at a glance. This is the bulk of live ops.</p>
+
+  <p><strong>Zone strip.</strong> One tile per logical zone (could be "Stage L", "Truss", "Panthers Vehicle Front", whatever you've defined). Shows online/offline status, current brightness as a bar. Tap a tile to drill in: per-zone scene override, per-zone brightness, per-zone hue offset. Critical for events where you want different looks in different rooms.</p>
+
+  <p><strong>Side controls.</strong> Master brightness (sliders, not buttons — for smooth fades). Hue offset (rotates the active palette in real time). Strobe rate (gates the beatPhase variable, lets you do 1/2, 1/4, 1/8 beat strobes without changing scene). Beat divider locks the visual rhythm to a multiple of the source beat — useful when DJ is at 174 dnb and you want the lights at half time.</p>
+
+  <p><strong>Mode lock.</strong> Forces the Conductor into Live / Sensor / Tap mode, overriding the auto-fallback. Useful for soundcheck (force Tap), or when you know DJ is taking a break (force Sensor so it reacts to background music).</p>
+
+  <p><strong>Kill switch.</strong> Big red button. Tap → instant black across the entire rig. Tap again → restore previous state. This must work even if everything else is broken. Implementation note: this sends a special <em>kill=1</em> setVar that every pattern is required to honor in its render function. Belt and suspenders: also sends Firestorm a "brightness 0 to all" command.</p>
+
+  <h3>Tech stack for PULSEDECK</h3>
+  <ul>
+    <li><strong>Frontend:</strong> Single-page app, vanilla JS or lightweight framework (Preact, Svelte). No build step ideally — serve raw HTML/CSS/JS from the Conductor's static directory. Easier to debug, faster to load on a venue tablet.</li>
+    <li><strong>State:</strong> WebSocket to the Conductor for everything. UI reflects Conductor state, not local state — so two tablets stay in sync, and a reload doesn't lose context.</li>
+    <li><strong>Persistence:</strong> Scenes, zone assignments, color palettes saved as JSON on the Conductor's disk. Versioned. Git-trackable.</li>
+    <li><strong>PWA:</strong> Add manifest + service worker so PULSEDECK can be "installed" full-screen on iPad. Hides Safari chrome, looks native.</li>
+    <li><strong>Auth:</strong> Local network only by default. Optional shared password if exposing on venue WiFi.</li>
+  </ul>
+
+  <div class="callout cyan">
+    <div class="callout-label">Why not just use OSC/Pilot</div>
+    <p style="margin:0">OSC/Pilot is great but it (a) costs money, (b) requires its own configuration export per show, (c) speaks OSC only — every state change is one-way, no feedback into the UI, (d) doesn't know which scene is active or whether PBs are online. PULSEDECK is purpose-built: it shows the rig's state because it <em>is</em> the rig's UI, not a control surface bolted onto it.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ PB CONTRACT ═════════════════ -->
+<section id="contract">
+  <div class="section-tag">07 · Pattern Contract</div>
+  <h2>What every PULSE pattern must implement</h2>
+  <p>For a Pixelblaze pattern to participate in the system, it needs to declare a small set of exported variables that the Conductor will write to, and respect a few conventions in its render loop. This is the contract — keep it stable across patterns and the whole catalog stays composable.</p>
+
+  <h4>Required exported variables</h4>
+<pre data-label="every PULSE pattern · header"><code><span class="com">// ────── PULSE protocol v1 ──────</span>
+<span class="kw">export var</span> bpm = <span class="num">128</span>          <span class="com">// set by Conductor</span>
+<span class="kw">export var</span> beatAnchorMs = <span class="num">0</span>    <span class="com">// ms timestamp of last beat</span>
+<span class="kw">export var</span> bar = <span class="num">0</span>             <span class="com">// 1..N within phrase</span>
+<span class="kw">export var</span> downbeat = <span class="num">0</span>        <span class="com">// 1 for one frame on bar 1</span>
+<span class="kw">export var</span> energy = <span class="num">0</span>          <span class="com">// 0..1 audio energy (sensor mode)</span>
+<span class="kw">export var</span> mode = <span class="num">1</span>            <span class="com">// 1=live, 2=sensor, 3=freerun, 0=panic</span>
+
+<span class="com">// ────── PULSEDECK overrides ──────</span>
+<span class="kw">export var</span> masterBrightness = <span class="num">1</span> <span class="com">// 0..1</span>
+<span class="kw">export var</span> hueOffset = <span class="num">0</span>       <span class="com">// 0..1, rotates palette</span>
+<span class="kw">export var</span> strobeRate = <span class="num">1</span>      <span class="com">// 1=no strobe, 2,4,8 = subdivide beat</span>
+<span class="kw">export var</span> beatDivider = <span class="num">1</span>     <span class="com">// half-time / double-time visuals</span>
+<span class="kw">export var</span> killActive = <span class="num">0</span>      <span class="com">// 1 = force all black</span></code></pre>
+
+  <h4>Local beat-phase computation</h4>
+<pre data-label="boilerplate render setup"><code><span class="kw">var</span> beatPhase, barPhase, nowMs
+
+<span class="kw">export function</span> <span class="fn">beforeRender</span>(delta) {
+  <span class="com">// shared Firestorm-synced clock in ms</span>
+  nowMs = <span class="fn">time</span>(<span class="num">0.015259</span>) * <span class="num">65536</span>
+
+  <span class="kw">var</span> interval = <span class="num">60000</span> / (bpm * beatDivider)
+  beatPhase = ((nowMs - beatAnchorMs) % interval) / interval
+
+  <span class="com">// strobe gate: only "on" during the strobeRate-th of each beat</span>
+  <span class="kw">if</span> (strobeRate &gt; <span class="num">1</span>) {
+    beatPhase = (beatPhase * strobeRate) % <span class="num">1</span>
+  }
+}
+
+<span class="kw">export function</span> <span class="fn">render</span>(index) {
+  <span class="kw">if</span> (killActive) { <span class="fn">rgb</span>(<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>); <span class="kw">return</span> }
+
+  <span class="com">// ... pattern-specific code using beatPhase, energy, etc ...</span>
+  <span class="kw">var</span> h = (myHue + hueOffset) % <span class="num">1</span>
+  <span class="kw">var</span> v = brightness * masterBrightness
+  <span class="fn">hsv</span>(h, <span class="num">1</span>, v)
+}</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">Contract discipline</div>
+    <p style="margin:0">Every pattern must honor <em>killActive</em> in its first render line, and must multiply final brightness by <em>masterBrightness</em>. These are non-negotiable. A pattern that ignores them is a pattern that bricks the kill switch — which is the worst possible failure mode. Add a linter / test script that grep-checks every pattern in the catalog for both.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ RELIABILITY ═════════════════ -->
+<section id="reliability">
+  <div class="section-tag">08 · Reliability</div>
+  <h2>What makes this rock solid</h2>
+  <p>The whole rig has to survive the worst night of its life — flaky venue WiFi, a DJ that yanks the ethernet to swap CDJs, a Conductor that crashes mid-set, a tablet that goes to sleep, a PB that loses power. Below is what each layer is designed to absorb.</p>
+
+  <h3>Failure isolation matrix</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>If this fails…</th><th>This still works</th><th>Recovery time</th></tr></thead>
+      <tbody>
+        <tr><td>One Pixelblaze</td><td>All others. That zone goes dark.</td><td class="mono">Manual: replace fixture</td></tr>
+        <tr><td>PB WiFi briefly</td><td>That PB keeps rendering current scene at last-known bpm/anchor for ~minutes</td><td class="mono">Auto: reconnects when AP returns</td></tr>
+        <tr><td>Conductor process</td><td>All PBs hold their scene, brightness, and beat anchor. Visual continues.</td><td class="mono">systemd restart in &lt;3s</td></tr>
+        <tr><td>Conductor host</td><td>All PBs hold last state. PULSEDECK shows "Conductor offline" but doesn't crash.</td><td class="mono">Swap to cold-spare in ~60s</td></tr>
+        <tr><td>BLT</td><td>Conductor switches to sensor or tap mode. Lights stay reactive.</td><td class="mono">Auto: detected in 5s</td></tr>
+        <tr><td>Pioneer rig</td><td>Sensor mode kicks in. Lights react to PA mic.</td><td class="mono">Auto: detected in 5s</td></tr>
+        <tr><td>PULSEDECK tablet</td><td>Show keeps running on last scene. Open browser on another device.</td><td class="mono">Instant: any browser, any device</td></tr>
+        <tr><td>Firestorm</td><td>Conductor still drives setVars. Pattern swaps via direct PB WS calls.</td><td class="mono">Auto: graceful degrade</td></tr>
+        <tr><td>Venue WiFi (LED net)</td><td>Conductor + PBs are on their <strong>own AP</strong> — venue WiFi failure has zero impact</td><td class="mono">N/A by design</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Operational hardening</h3>
+  <ul>
+    <li><strong>systemd</strong> wraps the Conductor with <em>Restart=always</em>, <em>RestartSec=2</em>, journal logging. Crashes are invisible to ops.</li>
+    <li><strong>Watchdog timer</strong> — if the Conductor process is alive but not emitting heartbeats (event loop blocked), an external Python script SIGKILLs and restarts it.</li>
+    <li><strong>Health endpoint</strong> at <em>/healthz</em> on the Conductor returns JSON of all state. PULSEDECK polls this every 2s; if it goes red, operator sees it.</li>
+    <li><strong>Structured logging</strong> — every state transition (mode change, scene swap, PB connect/disconnect) is logged as JSON with timestamps. Post-show debugging becomes trivial.</li>
+    <li><strong>Configuration in version control</strong> — scenes, zone definitions, PB IP list all live as JSON in a git repo. Every show is a tagged commit. Rollback is a checkout.</li>
+    <li><strong>Static IPs for PBs</strong> via DHCP reservation on the AP. No mDNS race conditions. Conductor knows exactly which IP is which zone.</li>
+    <li><strong>Network segregation</strong> — DJ Pro DJ Link, PB WiFi, and venue WiFi are on three separate L2 networks. The Conductor is the only thing that bridges them. No accidental cross-traffic.</li>
+    <li><strong>UPS on Conductor + switch + AP</strong> for ~15 min runtime. Venue power blips don't kill the show.</li>
+    <li><strong>Soundcheck script</strong> — a CLI that walks every PB, verifies WebSocket connectivity, sends a test pattern, confirms expected pixelCount. Runs in &lt;30s before doors open.</li>
+  </ul>
+
+  <h3>Catalog discipline</h3>
+  <p>The rig is only as reliable as the patterns it runs. Adopt these conventions:</p>
+  <ul>
+    <li>Every pattern starts from the same boilerplate (see §07).</li>
+    <li>Every pattern includes a header comment block: name, author, date, intended zone type (1D strip, 2D matrix, etc.), expected pixelCount range.</li>
+    <li>Patterns are versioned in a git repo. The Firestorm catalog is generated from the repo, not edited live on PBs.</li>
+    <li>A "linter" script verifies <em>killActive</em> handling and <em>masterBrightness</em> multiplication before any pattern is committed.</li>
+    <li>Each pattern has a "rest mode" — if <em>energy &lt; 0.05</em> and no beats for 30s, the pattern should ease into a calm idle state rather than going dark or strobing. Polished.</li>
+  </ul>
+</section>
+
+<!-- ═════════════════ NETWORK ═════════════════ -->
+<section id="network">
+  <div class="section-tag">09 · Network</div>
+  <h2>Topology</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart LR
+  subgraph DJ ["🎚 DJ subnet · 169.254/16"]
+    CDJ1[CDJ-3000 ×2]
+    DJM[DJM]
+  end
+
+  subgraph LED ["💡 LED subnet · 10.20.0/24"]
+    PB1[PB · Zone A]
+    PB2[PB · Zone B]
+    PB3[PB · Zone C]
+    AP[WiFi AP]
+  end
+
+  subgraph VENUE ["🏛 Venue WiFi · DHCP"]
+    TAB[Tablet]
+  end
+
+  HOST["Conductor host<br/>3 NICs:<br/>eth0=DJ, eth1=LED, wlan0=Venue"]
+
+  CDJ1 -- ethernet --- HOST
+  DJM -- ethernet --- HOST
+  HOST -- ethernet --- AP
+  AP -. WiFi .- PB1
+  AP -. WiFi .- PB2
+  AP -. WiFi .- PB3
+  TAB -. WiFi .- HOST
+    </pre>
+  </div>
+
+  <p>The Conductor host has three network interfaces: <strong>eth0</strong> on the DJ Pro DJ Link subnet, <strong>eth1</strong> on the LED subnet feeding the dedicated AP, and <strong>wlan0</strong> joining venue WiFi for the tablet. No traffic crosses the three except through the Conductor process itself. This is the single most important reliability decision in the whole spec.</p>
+
+  <div class="callout red">
+    <div class="callout-label">Do not</div>
+    <p style="margin:0">…put PBs on venue WiFi. Don't share the DJ subnet with anything except CDJs, DJM, and the Conductor. Don't run rekordbox on the Conductor host (port 50000-50002 contention). Disable AnyDesk on the host (also squats on those ports). These have all bitten people in the wild.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ BUILD PLAN ═════════════════ -->
+<section id="build">
+  <div class="section-tag">10 · Build Plan</div>
+  <h2>Don't build all four layers at once</h2>
+  <p>Each phase is independently testable. Don't move forward until the previous phase is rock solid. Total time to a working rig: ~2 weekends of focused work, assuming hardware is in hand.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Phase</th><th>Goal</th><th>Done when…</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Fake-beat Conductor + 1 PB</strong></td>
+          <td>Conductor sends <em>setVars</em> on a fake 128 BPM. One PB pulses on beat.</td>
+          <td class="mono">PB visibly pulses, phase locks to a metronome app</td>
+        </tr>
+        <tr>
+          <td><strong>2. BLT + 1 CDJ</strong></td>
+          <td>Wire up Pro DJ Link. Replace the fake clock with real BLT.</td>
+          <td class="mono">Pulsing locks to a CDJ playing a test track</td>
+        </tr>
+        <tr>
+          <td><strong>3. Firestorm + multiple PBs</strong></td>
+          <td>Add Firestorm. Verify <em>time()</em> sync across PBs.</td>
+          <td class="mono">Two PBs phase-lock visually side by side</td>
+        </tr>
+        <tr>
+          <td><strong>4. PULSEDECK v1</strong></td>
+          <td>Build the web UI. Scene grid, brightness, kill.</td>
+          <td class="mono">Operator can launch scenes from tablet, kill works in &lt;100ms</td>
+        </tr>
+        <tr>
+          <td><strong>5. Reliability layer</strong></td>
+          <td>systemd, watchdog, healthz, structured logging, soundcheck script.</td>
+          <td class="mono">Conductor survives 24hr soak test with random kill -9 every 5 min</td>
+        </tr>
+        <tr>
+          <td><strong>6. Sensor + Tap fallbacks</strong></td>
+          <td>Add the two non-DJ modes.</td>
+          <td class="mono">Unplug CDJ → lights stay reactive within 5s</td>
+        </tr>
+        <tr>
+          <td><strong>7. Pattern catalog</strong></td>
+          <td>Build out 12+ patterns conforming to §07 contract.</td>
+          <td class="mono">Lint passes; catalog covers slow/fast/strobe/sweep/ambient</td>
+        </tr>
+        <tr>
+          <td><strong>8. Production hardening</strong></td>
+          <td>3 NICs, UPS, cold-spare imaging, runbook.</td>
+          <td class="mono">Show-ready. Could deploy at a paid gig.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═════════════════ PULSEFORGE ═════════════════ -->
+<section id="forge">
+  <div class="section-tag">11 · PULSEFORGE</div>
+  <h2>AI-driven pattern composition</h2>
+  <p>The catalog problem: a stage rig that's only as interesting as the patterns it can play. Hand-writing Pixelblaze patterns is fun but slow, and the per-show iteration cost is real — different venues, different fixture geometries, different musical moods all want new looks. PULSEFORGE is the in-browser tool that lets you describe a pattern in plain English, generates a PULSE-compliant Pixelblaze program with full geometry awareness, validates it against the contract, previews it live in the browser, and one-click deploys it to a target zone or saves it to the catalog.</p>
+
+  <h3>What you get</h3>
+  <p>A web app served by the Conductor at <em>/forge</em>. Pick a target zone from the PULSEMAP topology, write a prompt like <em>"slow purple wave that punches harder on the downbeat, drifts toward magenta on the third bar of every phrase"</em>, and seconds later you've got working code, a live animated preview, and a "deploy to Zone B" button. Iterate by chatting: <em>"slower"</em> · <em>"more contrast"</em> · <em>"add a sparkle on energy spikes"</em>. Save the good ones to the catalog where PULSEDECK can launch them.</p>
+
+  <div class="mockup-frame">
+    <div class="mockup-titlebar">
+      <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="url">http://conductor.local:8080/forge — PULSEFORGE</div>
+    </div>
+
+    <div class="mockup-app">
+      <div class="forge-prompt-bar">
+        <select class="zone-select">
+          <option>▾ Zone B · Truss (1D · 144px)</option>
+        </select>
+        <input class="prompt-input" value="slow purple wave that punches on downbeat, drifts magenta on bar 3">
+        <button class="generate-btn">Generate ▸</button>
+      </div>
+
+      <div class="forge-grid">
+        <div class="forge-panel">
+          <div class="preview-label"><span>Pattern · v3</span><span class="v">● synced</span></div>
+          <pre class="forge-code" style="margin:0; padding:0.5rem 0;"><span class="com">// Slow Purple Punch — generated 2026-05-15</span>
+<span class="com">// Target: Zone B (1D strip, 144px)</span>
+<span class="kw">export var</span> bpm = <span class="num">128</span>
+<span class="kw">export var</span> beatAnchorMs = <span class="num">0</span>
+<span class="kw">export var</span> bar = <span class="num">0</span>
+<span class="kw">export var</span> masterBrightness = <span class="num">1</span>
+<span class="kw">export var</span> hueOffset = <span class="num">0</span>
+<span class="kw">export var</span> killActive = <span class="num">0</span>
+
+<span class="kw">var</span> phase, drift, punch
+
+<span class="kw">export function</span> <span class="fn">beforeRender</span>(d) {
+  <span class="kw">var</span> nowMs = <span class="fn">time</span>(<span class="num">0.015259</span>) * <span class="num">65536</span>
+  <span class="kw">var</span> intv = <span class="num">60000</span> / bpm
+  phase = ((nowMs - beatAnchorMs) % intv) / intv
+  punch = <span class="num">1</span> - phase
+  drift = (bar % <span class="num">4</span> == <span class="num">2</span>) ? <span class="num">0.08</span> : <span class="num">0</span>
+}
+
+<span class="kw">export function</span> <span class="fn">render</span>(i) {
+  <span class="kw">if</span> (killActive) { <span class="fn">rgb</span>(<span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>); <span class="kw">return</span> }
+  <span class="kw">var</span> p = i / pixelCount
+  <span class="kw">var</span> w = <span class="fn">wave</span>(p * <span class="num">0.5</span> - phase * <span class="num">0.25</span>)
+  <span class="kw">var</span> h = (<span class="num">0.78</span> + drift + hueOffset) % <span class="num">1</span>
+  <span class="kw">var</span> v = w * (<span class="num">0.4</span> + punch * <span class="num">0.6</span>) * masterBrightness
+  <span class="fn">hsv</span>(h, <span class="num">1</span>, v)
+}</pre>
+        </div>
+
+        <div class="forge-panel">
+          <div class="preview-label"><span>Live preview · 128 bpm sim</span><span class="v">● running</span></div>
+          <div class="forge-preview-stage">
+            <div class="led-strip">
+              <div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div>
+              <div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div>
+              <div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div>
+              <div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div>
+              <div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div>
+              <div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div><div class="led-pixel"></div>
+            </div>
+            <div class="preview-label" style="margin-top:auto"><span>fps · 102</span><span>frames · 8,440</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="validate-row">
+        <span class="validate-chip">contract vars OK</span>
+        <span class="validate-chip">killActive honored</span>
+        <span class="validate-chip">masterBrightness wired</span>
+        <span class="validate-chip">code size 411B / 8KB</span>
+        <span class="validate-chip warn">no rest-mode fallback</span>
+      </div>
+
+      <div class="refine-row">
+        <button class="refine-chip">slower</button>
+        <button class="refine-chip">more saturation</button>
+        <button class="refine-chip">sparkle on energy</button>
+        <button class="refine-chip">smoother wave</button>
+        <input class="refine-input" placeholder="refine: e.g. 'add a white flicker every 8 beats'">
+      </div>
+    </div>
+  </div>
+
+  <h3>The generation pipeline</h3>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart LR
+  classDef io fill:#1a1308,stroke:#ffb648,color:#fff
+  classDef ai fill:#1a0d18,stroke:#ff2bb1,color:#fff
+  classDef sys fill:#0a1a1f,stroke:#00e1ff,color:#fff
+  classDef out fill:#0f1a12,stroke:#38e078,color:#fff
+
+  P["📝 User prompt<br/>'slow purple wave...'"]:::io
+  Z["📐 Target geometry<br/>from PULSEMAP topology"]:::sys
+  C["📚 Catalog primers<br/>3-5 similar examples"]:::sys
+  CL["🧠 Claude API<br/>structured generation"]:::ai
+  V["✅ Validator<br/>AST + contract lint"]:::sys
+  S["🎨 Browser simulator<br/>PB language interpreter"]:::sys
+  PV["👁 Live preview canvas"]:::out
+  D["🚀 Deploy to PB<br/>via Conductor"]:::out
+  CAT["💾 Save to catalog<br/>git-tracked"]:::out
+
+  P --> CL
+  Z --> CL
+  C --> CL
+  CL --> V
+  V -- pass --> S
+  V -- fail --> CL
+  S --> PV
+  PV --> D
+  PV --> CAT
+    </pre>
+  </div>
+
+  <h3>The system prompt</h3>
+  <p>Claude needs three things every time: a tight description of the Pixelblaze language subset (it's not regular JavaScript — 16.16 fixed point, no closures, no objects, no <em>let</em>/<em>const</em>, no <em>switch</em>), the PULSE protocol contract (required exported variables, kill switch handling, master brightness multiplication), and the target zone's geometry. Geometry awareness is the secret sauce — a pattern for a 5×7 matrix uses <em>render2D(i,x,y)</em>, a pattern for a vehicle wraparound strip wants the actual aspect ratio. Without geometry, you get generic 1D ramps.</p>
+
+<pre data-label="system prompt · skeleton"><code><span class="com">You are generating code for the Pixelblaze LED controller running</span>
+<span class="com">the PULSE protocol. The language is a JS-like subset with these rules:</span>
+
+<span class="com">  - All numbers are 16.16 fixed-point. No integers vs floats.</span>
+<span class="com">  - No closures, no objects, no `let` or `const`, no `switch`.</span>
+<span class="com">  - `export var` declares pattern parameters and external inputs.</span>
+<span class="com">  - `beforeRender(delta)` runs once per frame; `render(i)` per pixel.</span>
+<span class="com">  - For 2D maps: `render2D(i, x, y)` where x,y are 0..1.</span>
+<span class="com">  - For 3D: `render3D(i, x, y, z)`.</span>
+
+<span class="com">EVERY pattern MUST:</span>
+<span class="com">  1. Declare: bpm, beatAnchorMs, bar, masterBrightness,</span>
+<span class="com">     hueOffset, killActive (see contract).</span>
+<span class="com">  2. Check killActive first in render() and return rgb(0,0,0).</span>
+<span class="com">  3. Multiply final brightness by masterBrightness.</span>
+<span class="com">  4. Compute beatPhase locally from time() and beatAnchorMs.</span>
+
+<span class="com">Target zone:</span>
+<span class="com">  - id: zone_b_truss</span>
+<span class="com">  - geometry: 1D strip</span>
+<span class="com">  - pixelCount: 144</span>
+<span class="com">  - physical length: 3.0m</span>
+
+<span class="com">Reference patterns (few-shot):</span>
+<span class="com">  [insert 3 catalog patterns matched by tag similarity]</span>
+
+<span class="com">Output ONLY the Pixelblaze code. No prose, no markdown fences.</span></code></pre>
+
+  <h3>The validator (the trust layer)</h3>
+  <p>Generated code never goes directly to a Pixelblaze. The validator sits between the model and the device and enforces the contract — it's a small parser + linter written once and reused for every generation. It catches the things that would silently break the show.</p>
+  <ul>
+    <li><strong>AST parse</strong> against the Pixelblaze grammar — bad syntax fails fast without hitting the device.</li>
+    <li><strong>Exported var check</strong> — confirms all required PULSE protocol vars are declared.</li>
+    <li><strong>Kill switch check</strong> — grep-asserts that <em>render()</em> reads <em>killActive</em> in its first statement.</li>
+    <li><strong>Master brightness check</strong> — asserts <em>masterBrightness</em> is multiplied into the final color call.</li>
+    <li><strong>Geometry sanity</strong> — if zone is 2D, pattern must use <em>render2D</em>; rejected otherwise.</li>
+    <li><strong>Code size</strong> — Pixelblaze has memory limits; reject anything over the device limit.</li>
+    <li><strong>Auto-retry</strong> — if validation fails, the validation errors are fed back to Claude with a "fix these specific issues" prompt. Usually clears in 1-2 round trips.</li>
+  </ul>
+
+  <h3>The browser simulator</h3>
+  <p>Before code touches a real PB, it runs in the browser. A small JavaScript-shim implementation of the Pixelblaze runtime — exported vars become writable, <em>time()</em>, <em>wave()</em>, <em>hsv()</em>, <em>rgb()</em>, <em>render()</em>, <em>beforeRender()</em> all implemented in real JS. The simulator advances time, fires fake beat anchors at the chosen BPM, calls <em>render(i)</em> for each pixel, and pushes the resulting colors to a canvas. For 1D zones, a horizontal strip. For 2D, a grid. For 3D, a Three.js scene with a draggable camera.</p>
+
+  <div class="callout cyan">
+    <div class="callout-label">Why simulate, not deploy-and-look</div>
+    <p style="margin:0">Deploying every iteration to real hardware is slow, requires the rig powered on, and gets distracting for anyone in the room. Simulator is instant, runs in the same browser tab as the prompt input, and is good enough to dial in a pattern before going to silicon. Final visual confirmation still happens on the real fixture before catalog commit, but 80% of the iteration loop never touches WiFi.</p>
+  </div>
+
+  <h3>Catalog and deployment</h3>
+  <p>Save the good patterns. Catalog entries are JSON files in a git repo, one per pattern, with metadata: name, author, description, target zone type, BPM range, energy range, tags, the prompt that produced it, the generated code. PULSEDECK reads the catalog to populate its scene grid. Firestorm reads the catalog to dispatch programName changes. Every commit is a versioned snapshot of the show's pattern library.</p>
+
+<pre data-label="catalog/slow-purple-punch.json"><code>{
+  <span class="str">"id"</span>: <span class="str">"slow_purple_punch"</span>,
+  <span class="str">"name"</span>: <span class="str">"Slow Purple Punch"</span>,
+  <span class="str">"author"</span>: <span class="str">"alie + pulseforge"</span>,
+  <span class="str">"created"</span>: <span class="str">"2026-05-15"</span>,
+  <span class="str">"target"</span>: { <span class="str">"geometry"</span>: <span class="str">"1d"</span>, <span class="str">"pixelCountRange"</span>: [<span class="num">60</span>, <span class="num">300</span>] },
+  <span class="str">"tags"</span>: [<span class="str">"slow"</span>, <span class="str">"purple"</span>, <span class="str">"downbeat"</span>, <span class="str">"melodic"</span>],
+  <span class="str">"bpmRange"</span>: [<span class="num">100</span>, <span class="num">140</span>],
+  <span class="str">"prompt"</span>: <span class="str">"slow purple wave that punches on downbeat..."</span>,
+  <span class="str">"code"</span>: <span class="str">"export var bpm = 128 ..."</span>,
+  <span class="str">"thumbnail"</span>: <span class="str">"data:image/png;base64,..."</span>
+}</code></pre>
+
+  <h3>Iteration UX</h3>
+  <p>The refinement chat is conversational. Each user turn is appended to the prompt history along with the previous pattern code; Claude returns a delta or rewrite. Quick-chip buttons (<em>slower</em>, <em>more saturation</em>, <em>sparkle on energy</em>) are macros that pre-fill the refinement input — they're not hardcoded edits, they're prompt sugar. A pattern goes through 3-8 iterations on average before it's catalog-ready, and the simulator means each iteration is &lt;5 seconds.</p>
+
+  <div class="callout">
+    <div class="callout-label">A note on AI quality</div>
+    <p style="margin:0">Claude is genuinely good at Pixelblaze patterns — they're small, math-flavored, and well-documented. The catch is consistency across the contract. Without the validator + system prompt discipline, you'll get patterns that "work" but quietly skip the kill switch or forget hue offset. With them, the generated code is production-grade and ships to the rig without manual review. The discipline is what makes it trustworthy live.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ PULSEMAP ═════════════════ -->
+<section id="map">
+  <div class="section-tag">12 · PULSEMAP</div>
+  <h2>Physical LED mapping</h2>
+  <p>Every other piece of PULSE depends on knowing <strong>where the pixels actually are</strong>. Pixelblaze needs pixel maps to render 2D and 3D patterns correctly. PULSEDECK needs topology to show a live rig view. PULSEFORGE needs geometry to generate patterns that fit the fixture. PULSEMAP is the visual editor that produces all of it from a single source of truth — and it does what hand-written Pixelblaze map JS can't: handle complex installations like a multi-channel animatronic vehicle in a single pane of glass.</p>
+
+  <h3>Why it exists</h3>
+  <p>Pixelblaze ships with a mapper that's basically a JavaScript text editor. For a single strip it's fine; for a 5×7 matrix it's tolerable; for a multi-zone build with strips wrapping curved surfaces across multiple output expander channels, it's a punishing way to spend a Tuesday. PULSEMAP replaces the text editor with a canvas: drop in a reference photo, trace LED paths visually, assign controller/channel/start index per segment, name the zone, click export. Out the other side: a <em>pixel-map.js</em> per Pixelblaze (uploaded automatically via Firestorm's API), and a <em>topology.json</em> consumed by the Conductor.</p>
+
+  <h3>Data flow at design time vs runtime</h3>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TB
+  classDef design fill:#1a1308,stroke:#ffb648,color:#fff
+  classDef out fill:#0f1a12,stroke:#38e078,color:#fff
+  classDef live fill:#0a1a1f,stroke:#00e1ff,color:#fff
+
+  REF["📷 Reference photo<br/>(optional)"]:::design
+  MAP["🗺 PULSEMAP editor"]:::design
+  TOPO["topology.json<br/>(zones · segments · geometry)"]:::out
+  PMJS["pixel-map.js per PB<br/>(deployed via Firestorm)"]:::out
+  PB["Pixelblazes<br/>render with correct geometry"]:::live
+  COND["Conductor<br/>knows zone → PB → IP routing"]:::live
+  DECK["PULSEDECK<br/>rig view with live status"]:::live
+  FORGE["PULSEFORGE<br/>geometry-aware generation"]:::live
+
+  REF --> MAP
+  MAP --> TOPO
+  MAP --> PMJS
+  PMJS --> PB
+  TOPO --> COND
+  TOPO --> DECK
+  TOPO --> FORGE
+    </pre>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="mockup-titlebar">
+      <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="url">http://conductor.local:8080/map — PULSEMAP · panthers_vehicle.pmap</div>
+    </div>
+
+    <div class="map-toolbar">
+      <button class="tool-btn active">▱ Select</button>
+      <button class="tool-btn">／ Strip</button>
+      <button class="tool-btn">▦ Matrix</button>
+      <button class="tool-btn">∿ Path</button>
+      <div class="tool-divider"></div>
+      <button class="tool-btn">📷 Import image</button>
+      <button class="tool-btn">📐 Calibrate</button>
+      <div class="tool-divider"></div>
+      <button class="tool-btn active">2D</button>
+      <button class="tool-btn">3D</button>
+      <div class="tool-divider" style="margin-left:auto"></div>
+      <button class="tool-btn" style="border-color:var(--cyan); color:var(--cyan)">⤓ Export</button>
+    </div>
+
+    <div class="map-frame">
+      <!-- LEFT: layers -->
+      <div class="map-side">
+        <div class="preview-label" style="margin-bottom:0.5rem"><span>Layers</span><span class="v">5</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#00e1ff"></span><span>Front arch</span><span class="lcount">144</span></div>
+        <div class="layer-row active"><span class="lswatch" style="background:#ff2bb1"></span><span>Body left</span><span class="lcount">300</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#ff2bb1"></span><span>Body right</span><span class="lcount">300</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#ffb648"></span><span>Eyes matrix</span><span class="lcount">5×7×2</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#38e078"></span><span>Ground glow</span><span class="lcount">120</span></div>
+
+        <div class="preview-label" style="margin: 1rem 0 0.5rem"><span>Zones</span><span class="v">3</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#00e1ff"></span><span>Z_FRONT</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#ff2bb1"></span><span>Z_BODY</span></div>
+        <div class="layer-row"><span class="lswatch" style="background:#ffb648"></span><span>Z_FACE</span></div>
+      </div>
+
+      <!-- CENTER: canvas -->
+      <div class="map-stage">
+        <svg viewBox="0 0 400 280" style="width:100%; max-width:520px; height:auto;">
+          <!-- ghost reference outline (vehicle silhouette) -->
+          <path d="M60,200 Q60,140 100,120 L140,90 Q180,75 220,75 Q280,75 320,100 Q360,120 360,180 L360,210 Q340,225 320,225 L100,225 Q70,225 60,210 Z"
+            fill="rgba(255,255,255,0.02)" stroke="rgba(140,160,180,0.25)" stroke-width="1" stroke-dasharray="3 4"/>
+          <!-- wheels -->
+          <circle cx="120" cy="225" r="22" fill="none" stroke="rgba(140,160,180,0.25)" stroke-width="1" stroke-dasharray="2 3"/>
+          <circle cx="300" cy="225" r="22" fill="none" stroke="rgba(140,160,180,0.25)" stroke-width="1" stroke-dasharray="2 3"/>
+
+          <!-- Front arch (cyan) -->
+          <path d="M100,118 Q150,80 220,76 Q290,80 340,108" fill="none" stroke="#00e1ff" stroke-width="2"/>
+          <g fill="#00e1ff">
+            <circle cx="105" cy="116" r="2.2"/><circle cx="125" cy="103" r="2.2"/>
+            <circle cx="150" cy="90" r="2.2"/><circle cx="180" cy="82" r="2.2"/>
+            <circle cx="210" cy="77" r="2.2"/><circle cx="240" cy="77" r="2.2"/>
+            <circle cx="270" cy="80" r="2.2"/><circle cx="300" cy="88" r="2.2"/>
+            <circle cx="325" cy="100" r="2.2"/><circle cx="338" cy="110" r="2.2"/>
+          </g>
+
+          <!-- Body left (magenta, SELECTED) -->
+          <path d="M62,200 Q62,165 90,140 Q120,118 160,110" fill="none" stroke="#ff2bb1" stroke-width="2.5"/>
+          <g fill="#ff2bb1">
+            <circle cx="62" cy="195" r="2.5"/><circle cx="63" cy="180" r="2.5"/>
+            <circle cx="68" cy="165" r="2.5"/><circle cx="75" cy="152" r="2.5"/>
+            <circle cx="86" cy="142" r="2.5"/><circle cx="100" cy="132" r="2.5"/>
+            <circle cx="120" cy="120" r="2.5"/><circle cx="140" cy="114" r="2.5"/>
+            <circle cx="160" cy="110" r="2.5"/>
+          </g>
+          <!-- selection handles -->
+          <rect x="58" y="191" width="8" height="8" fill="none" stroke="#fff" stroke-width="1"/>
+          <rect x="156" y="106" width="8" height="8" fill="none" stroke="#fff" stroke-width="1"/>
+          <!-- index labels -->
+          <text x="62" y="210" font-family="JetBrains Mono" font-size="7" fill="#ff2bb1">0</text>
+          <text x="160" y="105" font-family="JetBrains Mono" font-size="7" fill="#ff2bb1">299</text>
+
+          <!-- Body right (magenta) -->
+          <path d="M338,200 Q338,165 310,140 Q280,118 240,110" fill="none" stroke="#ff2bb1" stroke-width="2"/>
+          <g fill="#ff2bb1" opacity="0.7">
+            <circle cx="338" cy="195" r="2.2"/><circle cx="337" cy="180" r="2.2"/>
+            <circle cx="332" cy="165" r="2.2"/><circle cx="325" cy="152" r="2.2"/>
+            <circle cx="314" cy="142" r="2.2"/><circle cx="300" cy="132" r="2.2"/>
+            <circle cx="280" cy="120" r="2.2"/><circle cx="260" cy="114" r="2.2"/>
+            <circle cx="240" cy="110" r="2.2"/>
+          </g>
+
+          <!-- Eyes matrices (amber) -->
+          <g fill="#ffb648">
+            <rect x="172" y="130" width="22" height="16" fill="none" stroke="#ffb648" stroke-width="1"/>
+            <rect x="206" y="130" width="22" height="16" fill="none" stroke="#ffb648" stroke-width="1"/>
+            <!-- pixel dots inside left eye -->
+            <g transform="translate(174,132)">
+              <circle cx="2" cy="2" r="0.8"/><circle cx="5" cy="2" r="0.8"/><circle cx="8" cy="2" r="0.8"/><circle cx="11" cy="2" r="0.8"/><circle cx="14" cy="2" r="0.8"/><circle cx="17" cy="2" r="0.8"/><circle cx="20" cy="2" r="0.8"/>
+              <circle cx="2" cy="5" r="0.8"/><circle cx="5" cy="5" r="0.8"/><circle cx="8" cy="5" r="0.8"/><circle cx="11" cy="5" r="0.8"/><circle cx="14" cy="5" r="0.8"/><circle cx="17" cy="5" r="0.8"/><circle cx="20" cy="5" r="0.8"/>
+              <circle cx="2" cy="8" r="0.8"/><circle cx="5" cy="8" r="0.8"/><circle cx="8" cy="8" r="0.8"/><circle cx="11" cy="8" r="0.8"/><circle cx="14" cy="8" r="0.8"/><circle cx="17" cy="8" r="0.8"/><circle cx="20" cy="8" r="0.8"/>
+              <circle cx="2" cy="11" r="0.8"/><circle cx="5" cy="11" r="0.8"/><circle cx="8" cy="11" r="0.8"/><circle cx="11" cy="11" r="0.8"/><circle cx="14" cy="11" r="0.8"/><circle cx="17" cy="11" r="0.8"/><circle cx="20" cy="11" r="0.8"/>
+            </g>
+            <g transform="translate(208,132)">
+              <circle cx="2" cy="2" r="0.8"/><circle cx="5" cy="2" r="0.8"/><circle cx="8" cy="2" r="0.8"/><circle cx="11" cy="2" r="0.8"/><circle cx="14" cy="2" r="0.8"/><circle cx="17" cy="2" r="0.8"/><circle cx="20" cy="2" r="0.8"/>
+              <circle cx="2" cy="5" r="0.8"/><circle cx="5" cy="5" r="0.8"/><circle cx="8" cy="5" r="0.8"/><circle cx="11" cy="5" r="0.8"/><circle cx="14" cy="5" r="0.8"/><circle cx="17" cy="5" r="0.8"/><circle cx="20" cy="5" r="0.8"/>
+              <circle cx="2" cy="8" r="0.8"/><circle cx="5" cy="8" r="0.8"/><circle cx="8" cy="8" r="0.8"/><circle cx="11" cy="8" r="0.8"/><circle cx="14" cy="8" r="0.8"/><circle cx="17" cy="8" r="0.8"/><circle cx="20" cy="8" r="0.8"/>
+              <circle cx="2" cy="11" r="0.8"/><circle cx="5" cy="11" r="0.8"/><circle cx="8" cy="11" r="0.8"/><circle cx="11" cy="11" r="0.8"/><circle cx="14" cy="11" r="0.8"/><circle cx="17" cy="11" r="0.8"/><circle cx="20" cy="11" r="0.8"/>
+            </g>
+          </g>
+
+          <!-- Ground glow (green) -->
+          <line x1="80" y1="245" x2="320" y2="245" stroke="#38e078" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.6"/>
+
+          <!-- Scale indicator -->
+          <line x1="20" y1="260" x2="80" y2="260" stroke="#525d6c" stroke-width="1"/>
+          <line x1="20" y1="257" x2="20" y2="263" stroke="#525d6c" stroke-width="1"/>
+          <line x1="80" y1="257" x2="80" y2="263" stroke="#525d6c" stroke-width="1"/>
+          <text x="22" y="272" font-family="JetBrains Mono" font-size="7" fill="#525d6c">500 mm</text>
+        </svg>
+      </div>
+
+      <!-- RIGHT: properties -->
+      <div class="map-side right">
+        <div class="preview-label" style="margin-bottom:0.5rem"><span>Selected</span><span class="v">Body left</span></div>
+        <div class="prop-row"><span class="pkey">Segment ID</span><span class="pval">seg_body_l</span></div>
+        <div class="prop-row"><span class="pkey">Type</span><span class="pval">polyline 1D</span></div>
+        <div class="prop-row"><span class="pkey">Pixels</span><span class="pval">300</span></div>
+        <div class="prop-row"><span class="pkey">Length</span><span class="pval">2.8 m</span></div>
+        <div class="prop-row"><span class="pkey">Density</span><span class="pval">107/m</span></div>
+
+        <div class="preview-label" style="margin: 1rem 0 0.5rem"><span>Wiring</span></div>
+        <div class="prop-row"><span class="pkey">Controller</span><span class="pval">pb_body</span></div>
+        <div class="prop-row"><span class="pkey">Expander</span><span class="pval">OE-1</span></div>
+        <div class="prop-row"><span class="pkey">Channel</span><span class="pval">ch 1</span></div>
+        <div class="prop-row"><span class="pkey">Start index</span><span class="pval">0</span></div>
+        <div class="prop-row"><span class="pkey">Direction</span><span class="pval">forward</span></div>
+
+        <div class="preview-label" style="margin: 1rem 0 0.5rem"><span>Zone</span></div>
+        <div class="prop-row"><span class="pkey">Group</span><span class="pval">Z_BODY</span></div>
+        <div class="prop-row"><span class="pkey">Sister seg</span><span class="pval">seg_body_r</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Data model</h3>
+  <p>A single normalized model drives every export. The atomic unit is a <em>segment</em> — a contiguous run of pixels on one controller channel, with geometry, wiring, and zone membership. Segments compose into zones (visual grouping for ops). Controllers know which segments live on which channel. This is what gets serialized to <em>topology.json</em>.</p>
+
+<pre data-label="topology.json · model"><code>{
+  <span class="str">"version"</span>: <span class="num">1</span>,
+  <span class="str">"units"</span>: <span class="str">"mm"</span>,
+  <span class="str">"controllers"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"pb_body"</span>,
+      <span class="str">"ip"</span>: <span class="str">"10.20.0.21"</span>,
+      <span class="str">"expanders"</span>: [{ <span class="str">"id"</span>: <span class="str">"OE-1"</span>, <span class="str">"channels"</span>: <span class="num">8</span> }]
+    }
+  ],
+  <span class="str">"segments"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"seg_body_l"</span>,
+      <span class="str">"type"</span>: <span class="str">"polyline"</span>,
+      <span class="str">"controller"</span>: <span class="str">"pb_body"</span>,
+      <span class="str">"expander"</span>: <span class="str">"OE-1"</span>,
+      <span class="str">"channel"</span>: <span class="num">1</span>,
+      <span class="str">"startIndex"</span>: <span class="num">0</span>,
+      <span class="str">"pixelCount"</span>: <span class="num">300</span>,
+      <span class="str">"direction"</span>: <span class="str">"forward"</span>,
+      <span class="str">"points"</span>: [[<span class="num">62</span>,<span class="num">200</span>],[<span class="num">62</span>,<span class="num">140</span>],[<span class="num">90</span>,<span class="num">115</span>],[<span class="num">160</span>,<span class="num">95</span>]],
+      <span class="str">"zone"</span>: <span class="str">"Z_BODY"</span>
+    },
+    {
+      <span class="str">"id"</span>: <span class="str">"seg_eyes_l"</span>,
+      <span class="str">"type"</span>: <span class="str">"matrix"</span>,
+      <span class="str">"controller"</span>: <span class="str">"pb_face"</span>,
+      <span class="str">"channel"</span>: <span class="num">1</span>,
+      <span class="str">"startIndex"</span>: <span class="num">0</span>,
+      <span class="str">"pixelCount"</span>: <span class="num">35</span>,
+      <span class="str">"rows"</span>: <span class="num">5</span>,
+      <span class="str">"cols"</span>: <span class="num">7</span>,
+      <span class="str">"serpentine"</span>: <span class="kw">true</span>,
+      <span class="str">"position"</span>: { <span class="str">"x"</span>: <span class="num">172</span>, <span class="str">"y"</span>: <span class="num">130</span>, <span class="str">"w"</span>: <span class="num">22</span>, <span class="str">"h"</span>: <span class="num">16</span> },
+      <span class="str">"zone"</span>: <span class="str">"Z_FACE"</span>
+    }
+  ],
+  <span class="str">"zones"</span>: [
+    { <span class="str">"id"</span>: <span class="str">"Z_BODY"</span>, <span class="str">"label"</span>: <span class="str">"Body"</span>, <span class="str">"swatch"</span>: <span class="str">"#ff2bb1"</span> },
+    { <span class="str">"id"</span>: <span class="str">"Z_FACE"</span>, <span class="str">"label"</span>: <span class="str">"Face"</span>, <span class="str">"swatch"</span>: <span class="str">"#ffb648"</span> }
+  ]
+}</code></pre>
+
+  <h3>Export to Pixelblaze</h3>
+  <p>From the same topology, PULSEMAP generates a JS pixel map per Pixelblaze that conforms to the Pixelblaze map function signature. Each PB only sees the pixels assigned to it; coordinates are normalized to its own 0..1 space so patterns are portable across fixtures of different physical sizes.</p>
+
+<pre data-label="pb_body · pixel-map.js"><code><span class="com">// Generated by PULSEMAP — DO NOT EDIT</span>
+<span class="com">// Controller: pb_body  ·  Total pixels: 600</span>
+<span class="com">// Segments: seg_body_l (0..299), seg_body_r (300..599)</span>
+
+<span class="kw">function</span> <span class="fn">map</span>() {
+  <span class="kw">var</span> p = []
+  <span class="com">// seg_body_l — polyline, 300 px, normalized</span>
+  <span class="kw">var</span> bodyL = [
+    [<span class="num">0.00</span>, <span class="num">1.00</span>], [<span class="num">0.00</span>, <span class="num">0.71</span>],
+    [<span class="num">0.15</span>, <span class="num">0.55</span>], [<span class="num">0.50</span>, <span class="num">0.45</span>]
+  ]
+  <span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">0</span>; i &lt; <span class="num">300</span>; i++) {
+    <span class="kw">var</span> t = i / <span class="num">299</span>
+    p.<span class="fn">push</span>(<span class="fn">interpolatePolyline</span>(bodyL, t))
+  }
+  <span class="com">// seg_body_r — mirrored, 300 px</span>
+  <span class="kw">var</span> bodyR = [/* ... */]
+  <span class="kw">for</span> (<span class="kw">var</span> j = <span class="num">0</span>; j &lt; <span class="num">300</span>; j++) {
+    <span class="kw">var</span> t = j / <span class="num">299</span>
+    p.<span class="fn">push</span>(<span class="fn">interpolatePolyline</span>(bodyR, t))
+  }
+  <span class="kw">return</span> p
+}</code></pre>
+
+  <h3>Calibration mode</h3>
+  <p>The single most useful feature for large physical builds. Click <em>Calibrate</em>, click any segment, and PULSEMAP walks the segment's pixels live on the fixture — pixel 0 lights red, then pixel 1, then pixel 2, advancing every 500ms — so you can <strong>visually verify</strong> that the digital map matches the physical wiring. If pixel 0 in software lights up where you expected pixel 299, you know the segment direction needs to be reversed. Calibration uses the existing Conductor → PB WebSocket so no extra plumbing.</p>
+  <p>A more elaborate mode "binary search" lights half the segment at a time, asks the operator <em>which half is which?</em>, and rebuilds direction/order from physical observation. Saves hours on a vehicle build with hard-to-trace runs.</p>
+
+  <h3>Importing reference images</h3>
+  <p>Drop a photo into the canvas. It becomes a ghost layer at adjustable opacity. Set scale by clicking two points and entering the real-world distance between them. Now your tracings have real units. Critical for vehicle builds where you're often working from a CAD drawing or a photo of the welded chassis. Multiple images can stack (front view + side view) for 3D builds — the 3D mode lets you place those as orthographic backgrounds on the X/Y/Z planes.</p>
+
+  <h3>Integration with the rest of PULSE</h3>
+  <ul>
+    <li><strong>PULSEDECK rig view</strong> — a tab in PULSEDECK shows the PULSEMAP canvas read-only, with live status overlaid. Offline segments go grey. The currently-active scene colors the segments in their broad palette so you can see at a glance what's playing where. Pure observability win.</li>
+    <li><strong>PULSEFORGE geometry awareness</strong> — generation prompts auto-include the selected zone's geometry (1D length, 2D rows/cols, 3D bounds). Patterns generated against Zone B are guaranteed to use 1D rendering; patterns generated against the eyes matrix use <em>render2D</em> with the right serpentine handling.</li>
+    <li><strong>Conductor zone routing</strong> — when PULSEDECK says "set Zone Z_BODY to Slow Purple Punch," the Conductor looks up which controllers/channels belong to Z_BODY and dispatches to those specific PBs. Without the topology, scenes would be all-or-nothing.</li>
+    <li><strong>Soundcheck script</strong> — the &lt;30s pre-show check walks every segment from the topology, validates pixel counts match what the PB reports, flags mismatches before doors open.</li>
+  </ul>
+
+  <div class="callout cyan">
+    <div class="callout-label">Source of truth</div>
+    <p style="margin:0">topology.json is committed to the same git repo as the pattern catalog. Every change to the physical rig is a tagged commit. If the Panthers vehicle gets a new strip welded on next month, you re-map, commit, and every other layer of PULSE auto-picks up the change at next deploy. No "did we update the map in three places" failures.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ PROMPT LIBRARY ═════════════════ -->
+<section id="prompts">
+  <div class="section-tag">13 · Prompt Library</div>
+  <h2>Composing what you want to feel</h2>
+  <p>PULSEFORGE without scaffolding works fine — type a sentence, get a pattern. With scaffolding it becomes a creative instrument. The prompt library is the layer between "describe code" and "compose feeling": a mood wheel that picks the emotional quadrant, genre presets that lock BPM/palette/motion vocabulary, named animation idioms with proven resonance, and abstract "soul sliders" that map to dimensions humans understand (Warmth, Surprise, Complexity) rather than parameters models understand. The model still does the generation — the library gives intent a vocabulary that matches the way a designer thinks.</p>
+
+  <div class="mockup-frame">
+    <div class="mockup-titlebar">
+      <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="url">http://conductor.local:8080/forge — Compose by feeling</div>
+    </div>
+    <div class="mockup-app">
+
+      <div class="feel-grid">
+        <div class="mood-pad-wrap">
+          <div class="preview-label" style="align-self: flex-start"><span>Mood pad</span></div>
+          <svg viewBox="0 0 200 200" width="180" height="180">
+            <path d="M100,12 A88,88 0 0 1 188,100 L100,100 Z" fill="rgba(255,77,94,0.18)"/>
+            <path d="M188,100 A88,88 0 0 1 100,188 L100,100 Z" fill="rgba(255,182,72,0.18)"/>
+            <path d="M100,188 A88,88 0 0 1 12,100 L100,100 Z" fill="rgba(0,225,255,0.18)"/>
+            <path d="M12,100 A88,88 0 0 1 100,12 L100,100 Z" fill="rgba(255,43,177,0.18)"/>
+            <line x1="100" y1="20" x2="100" y2="180" stroke="rgba(140,160,180,0.25)" stroke-dasharray="3 3"/>
+            <line x1="20" y1="100" x2="180" y2="100" stroke="rgba(140,160,180,0.25)" stroke-dasharray="3 3"/>
+            <circle cx="100" cy="100" r="88" fill="none" stroke="#2c3a4a" stroke-width="1"/>
+            <text x="100" y="14" text-anchor="middle" fill="#8b95a3" font-size="9" font-family="JetBrains Mono">ENERGETIC</text>
+            <text x="100" y="196" text-anchor="middle" fill="#8b95a3" font-size="9" font-family="JetBrains Mono">CALM</text>
+            <text x="6" y="103" fill="#8b95a3" font-size="9" font-family="JetBrains Mono">COOL</text>
+            <text x="168" y="103" fill="#8b95a3" font-size="9" font-family="JetBrains Mono">WARM</text>
+            <circle cx="138" cy="60" r="9" fill="#06080a" stroke="#00e1ff" stroke-width="2"/>
+            <circle cx="138" cy="60" r="3" fill="#00e1ff"/>
+          </svg>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #00e1ff; letter-spacing: 0.05em;">euphoric · driving</div>
+        </div>
+
+        <div class="soul-sliders">
+          <div class="preview-label" style="margin-bottom: 0.5rem"><span>Soul sliders</span><span class="v">tuned</span></div>
+          <div class="soul-row"><div class="skey">Energy</div><div class="strack"><div class="sfill" style="width: 72%"></div></div><div class="sval">72</div></div>
+          <div class="soul-row"><div class="skey">Complexity</div><div class="strack"><div class="sfill" style="width: 45%"></div></div><div class="sval">45</div></div>
+          <div class="soul-row"><div class="skey">Warmth</div><div class="strack"><div class="sfill" style="width: 30%"></div></div><div class="sval">30</div></div>
+          <div class="soul-row"><div class="skey">Surprise</div><div class="strack"><div class="sfill" style="width: 60%"></div></div><div class="sval">60</div></div>
+          <div class="soul-row"><div class="skey">Contrast</div><div class="strack"><div class="sfill" style="width: 80%"></div></div><div class="sval">80</div></div>
+          <div class="soul-row"><div class="skey">Smoothness</div><div class="strack"><div class="sfill" style="width: 25%"></div></div><div class="sval">25</div></div>
+        </div>
+      </div>
+
+      <div class="genre-row">
+        <span style="font-family:'JetBrains Mono'; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--text-faint); margin-right: 0.25rem">Genre</span>
+        <button class="genre-chip">Techno</button>
+        <button class="genre-chip active">DnB</button>
+        <button class="genre-chip">House</button>
+        <button class="genre-chip">Trance</button>
+        <button class="genre-chip">Ambient</button>
+        <button class="genre-chip">Hip-Hop</button>
+        <button class="genre-chip">Disco</button>
+      </div>
+
+      <div class="idiom-row">
+        <span style="font-family:'JetBrains Mono'; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--text-faint); margin-right: 0.25rem">Idioms</span>
+        <button class="idiom-chip">slow breathing</button>
+        <button class="idiom-chip">downbeat punch</button>
+        <button class="idiom-chip">rain sparkle</button>
+        <button class="idiom-chip">fire flicker</button>
+        <button class="idiom-chip">wave pulse</button>
+        <button class="idiom-chip">spectrum bloom</button>
+        <button class="idiom-chip">mirror sweep</button>
+      </div>
+
+      <div class="variant-grid">
+        <div class="variant-card active">
+          <div class="vkey">A</div>
+          <div class="variant-strip">
+            <span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#cc2bb1;color:#cc2bb1"></span><span class="vpx" style="background:#882bb1;color:#882bb1"></span><span class="vpx" style="background:#6633ff;color:#6633ff"></span><span class="vpx" style="background:#882bb1;color:#882bb1"></span><span class="vpx" style="background:#cc2bb1;color:#cc2bb1"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span>
+          </div>
+          <div class="vname">Drop pulse</div>
+        </div>
+        <div class="variant-card">
+          <div class="vkey">B</div>
+          <div class="variant-strip">
+            <span class="vpx" style="background:#00e1ff;color:#00e1ff"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#00e1ff;color:#00e1ff"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#00e1ff;color:#00e1ff"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#00e1ff;color:#00e1ff"></span>
+          </div>
+          <div class="vname">Strobe</div>
+        </div>
+        <div class="variant-card">
+          <div class="vkey">C</div>
+          <div class="variant-strip">
+            <span class="vpx" style="background:#6633ff;color:#6633ff"></span><span class="vpx" style="background:#882bb1;color:#882bb1"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#ff4d5e;color:#ff4d5e"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#882bb1;color:#882bb1"></span><span class="vpx" style="background:#6633ff;color:#6633ff"></span>
+          </div>
+          <div class="vname">Mirror wave</div>
+        </div>
+        <div class="variant-card">
+          <div class="vkey">D</div>
+          <div class="variant-strip">
+            <span class="vpx" style="background:#220033;color:#220033"></span><span class="vpx" style="background:#66176d;color:#66176d"></span><span class="vpx" style="background:#aa33aa;color:#aa33aa"></span><span class="vpx" style="background:#ff2bb1;color:#ff2bb1"></span><span class="vpx" style="background:#aa33aa;color:#aa33aa"></span><span class="vpx" style="background:#66176d;color:#66176d"></span><span class="vpx" style="background:#220033;color:#220033"></span>
+          </div>
+          <div class="vname">Slow bloom</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <h3>The Mood Wheel</h3>
+  <p>A 2D pad based on Russell's circumplex of affect — the cleanest map between emotional language and dimensional parameters. The vertical axis is activation (calm ↔ energetic); the horizontal is valence (cool ↔ warm). Drag the dot anywhere on the wheel and PULSEFORGE auto-appends the corresponding mood descriptors to the prompt. A dot in the top-right corner adds <em>"euphoric, driving, hot, urgent"</em>; bottom-left adds <em>"reflective, deep, quiet, drifting"</em>. The wheel removes the need to remember the vocabulary — it gives the designer a directional control instead of a blank text box.</p>
+
+  <h3>Genre Presets</h3>
+  <p>Each genre is a curated bundle of defaults: a BPM range (DnB locks 165-180; House 118-128), a palette family (Trance loves cyan/purple, Techno wants white/orange/red, Disco wants saturated rainbow), and a motion vocabulary (Ambient → drifting, breathing, slow; Techno → mechanical, geometric, punctuated; Hip-Hop → bouncing, syncopated, weighty). Selecting a genre primes the model with three things at once instead of asking the designer to spell each out. The soul sliders can then override individual dimensions.</p>
+
+  <h3>Soul Sliders</h3>
+  <p>Six abstract dials that map to multiple low-level parameters at once. <em>Energy</em> drives speed, brightness peaks, frequency of motion; <em>Complexity</em> adds noise layers, parallax, harmonic motion; <em>Warmth</em> shifts the palette toward red/orange/yellow; <em>Surprise</em> introduces stochastic events (sparkles, flickers, color jumps); <em>Contrast</em> widens the dynamic range between dim and bright; <em>Smoothness</em> shapes the easing curves (sharp triangle vs sine vs cubic eased). These are the controls a designer instinctively wants — the prompt library translates them into model directives in the system prompt.</p>
+
+  <h3>Animation Idiom Library</h3>
+  <p>Named patterns with established emotional resonance: <em>slow breathing</em> for ambient warmth, <em>downbeat punch</em> for kick emphasis, <em>rain sparkle</em> for high-frequency twinkle on energy peaks, <em>fire flicker</em> for organic randomness, <em>wave pulse</em> for harmonic motion across the strip, <em>spectrum bloom</em> for color-explosion-on-drop, <em>mirror sweep</em> for symmetrical horizontal motion. Each idiom is a tested code fragment that the model uses as a structural anchor — pick an idiom and the generation is guaranteed to feel like that idiom. New idioms get added whenever a generated pattern works particularly well; the library grows with the rig's life. This is also the seam where community-contributed patterns plug in — share idioms, share looks.</p>
+
+  <h3>A/B Variant Generation</h3>
+  <p>Every <em>Compose</em> click generates four variants in parallel. Each variant subtly varies one or two dimensions while keeping the rest constant — A might be the pure interpretation, B with more contrast, C with a different palette anchor, D with slower easing. Click any variant to make it the canonical pattern, or chain another <em>Compose</em> with a refinement to evolve it further. Cuts decision fatigue, surfaces happy accidents, and feels closer to choosing a take in a recording session than coding.</p>
+
+  <h3>Reference Library</h3>
+  <p>Every committed pattern lives in the catalog with metadata — mood wheel position, soul-slider state, genre, idiom anchors, prompt, generation timestamp. Browse the catalog by emotional quadrant: <em>"show me everything in the energetic-cool quadrant"</em> for the next drop. Click any pattern to load its <strong>full creative context</strong> back into PULSEFORGE — the mood, the sliders, the genre, the idioms — and use it as a starting point. The catalog becomes the rig's personality, captured and reusable. Search by tag, by author, by date, by "patterns that worked at the last show."</p>
+
+  <h3>Music-aware composition (v0.4)</h3>
+  <p>Drop a track into PULSEFORGE; the browser analyzes it with Web Audio + Meyda (frequency bins, RMS energy, transient detection) and identifies sections: intro / verse / build / drop / breakdown / outro. Each section gets its own auto-composed pattern variation that shares a palette but varies energy, sparked by the track's actual energy curve. The result is a pre-choreographed lighting score that travels with the track. Powerful for fixed sets (festival headliners with rehearsed mixes) and installations (museums, art cars, brand events) where the music is curated.</p>
+
+  <div class="callout cyan">
+    <div class="callout-label">Why this works for emotion-evoking output</div>
+    <p style="margin:0">Models are limited by the words you give them. "Make it pretty" gives you mediocre pretty. "Slow breathing, magenta-violet bloom, 30% warmth, 60% surprise, on a 120-BPM build" gives you something specific enough to feel intended. The prompt library is structured intent — it stops the operator from being a prompt engineer and lets them be a designer with a richer palette of inputs. The model gets cleaner instructions; the human gets a more expressive instrument.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ TRUST STACK ═════════════════ -->
+<section id="trust">
+  <div class="section-tag">14 · The Trust Stack</div>
+  <h2>Simulator and Validator</h2>
+  <p>Two stages stand between a model's output and a deployed pattern. The <strong>Validator</strong> catches code that breaks the contract or the language; the <strong>Simulator</strong> shows what the pattern actually looks like before it ever touches silicon. Both run entirely in the browser, both are deterministic, both produce structured feedback. They're not nice-to-haves — they're the reason PULSEFORGE can ship code to stage hardware without manual review.</p>
+
+  <h3>The full pipeline</h3>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+  participant U as Operator
+  participant F as PULSEFORGE
+  participant CL as Claude API
+  participant V as Validator
+  participant S as Simulator
+  participant PB as Pixelblaze
+
+  U->>F: Mood + sliders + prompt
+  F->>CL: Compose request<br/>(system prompt + zone geom)
+  CL->>F: Pattern code (v1)
+  F->>V: Validate (AST + contract + size)
+  alt validation fails
+    V-->>F: Errors as fix prompt
+    F->>CL: Retry with fixes
+    CL->>F: Pattern code (v2)
+    F->>V: Validate again
+  end
+  V->>S: Pass — run in simulator
+  S-->>F: Render to canvas @ 60fps
+  Note over F,U: Operator iterates with<br/>refine chat / variant grid
+  U->>F: Approve
+  F->>PB: Deploy via Conductor
+    </pre>
+  </div>
+
+  <h3>14a · The Validator</h3>
+  <p>A small deterministic Node module. Takes Pixelblaze source + zone geometry, returns a structured report of pass/fail with specific issues. No magic. Same module runs in PULSEFORGE during generation, as a pre-commit git hook on the pattern catalog repo, and as a CLI sweep (<em>pulse-lint catalog/</em>) before every show.</p>
+
+  <h4>Lint rule set (v1)</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Rule</th><th>Severity</th><th>What it catches</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">P001 · syntax</td><td class="mono" style="color:var(--red)">error</td><td>AST parse fails — bad JS subset</td></tr>
+        <tr><td class="mono">P002 · required exports</td><td class="mono" style="color:var(--red)">error</td><td>Missing <em>bpm</em>, <em>beatAnchorMs</em>, <em>masterBrightness</em>, <em>killActive</em>, etc.</td></tr>
+        <tr><td class="mono">P003 · kill switch honor</td><td class="mono" style="color:var(--red)">error</td><td><em>render()</em> doesn't read <em>killActive</em> before any rgb/hsv call</td></tr>
+        <tr><td class="mono">P004 · master brightness</td><td class="mono" style="color:var(--red)">error</td><td>Final brightness path isn't multiplied by <em>masterBrightness</em></td></tr>
+        <tr><td class="mono">P005 · geometry match</td><td class="mono" style="color:var(--red)">error</td><td>Pattern uses <em>render2D</em> on a 1D zone or vice versa</td></tr>
+        <tr><td class="mono">P006 · forbidden constructs</td><td class="mono" style="color:var(--red)">error</td><td><em>let</em>, <em>const</em>, <em>switch</em>, closures, object literals — not in PB subset</td></tr>
+        <tr><td class="mono">P007 · code size</td><td class="mono" style="color:var(--amber)">warn</td><td>Compiled size exceeds 60% of PB program memory</td></tr>
+        <tr><td class="mono">P008 · unbounded loop</td><td class="mono" style="color:var(--amber)">warn</td><td><em>while</em> without obvious termination — may stall device</td></tr>
+        <tr><td class="mono">P009 · render() complexity</td><td class="mono" style="color:var(--amber)">warn</td><td>Per-pixel ops too high to maintain 100+ fps</td></tr>
+        <tr><td class="mono">P010 · hue offset wired</td><td class="mono" style="color:var(--amber)">warn</td><td><em>hueOffset</em> declared but not used in color calculation</td></tr>
+        <tr><td class="mono">P011 · rest mode</td><td class="mono" style="color:var(--amber)">warn</td><td>Pattern has no graceful low-energy fallback</td></tr>
+        <tr><td class="mono">P012 · float overflow risk</td><td class="mono" style="color:var(--amber)">warn</td><td>Division that could produce 16.16 overflow on edge cases</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Implementation</h4>
+<pre data-label="pulse-validator/index.js"><code><span class="kw">const</span> { parse } = <span class="fn">require</span>(<span class="str">'./pb-grammar'</span>)
+<span class="kw">const</span> rules = <span class="fn">require</span>(<span class="str">'./rules'</span>)
+
+<span class="kw">function</span> <span class="fn">validate</span>(source, zoneGeometry) {
+  <span class="kw">var</span> issues = []
+  <span class="kw">var</span> ast
+  <span class="kw">try</span> { ast = <span class="fn">parse</span>(source) }
+  <span class="kw">catch</span> (e) {
+    <span class="kw">return</span> [{ rule: <span class="str">'P001'</span>, severity: <span class="str">'error'</span>, msg: e.message, line: e.line }]
+  }
+
+  <span class="kw">for</span> (<span class="kw">const</span> rule <span class="kw">of</span> rules) {
+    <span class="kw">const</span> hits = rule.<span class="fn">check</span>(ast, source, zoneGeometry)
+    <span class="kw">if</span> (hits) issues.<span class="fn">push</span>(...hits)
+  }
+  <span class="kw">return</span> issues
+}
+
+<span class="com">// Structured issues become a fix prompt for auto-retry</span>
+<span class="kw">function</span> <span class="fn">issuesToFixPrompt</span>(issues) {
+  <span class="kw">return</span> <span class="str">"The pattern has these problems. Fix them all:\n"</span> +
+    issues.map(i =&gt; <span class="str">"- ["</span> + i.rule + <span class="str">"] "</span> + i.msg).<span class="fn">join</span>(<span class="str">"\n"</span>)
+}
+
+module.exports = { validate, issuesToFixPrompt }</code></pre>
+
+  <h4>CLI usage</h4>
+<pre data-label="pre-show sweep"><code>$ pulse-lint catalog/
+  ✓ slow_purple_punch.pb
+  ✓ cyan_rain.pb
+  ✗ drop_strobe.pb
+    [P003] render() must read killActive before any rgb/hsv call (line 14)
+    [P010] hueOffset declared but not used (warning)
+  ✓ ground_glow.pb
+
+  3 passed · 1 failed · 1 warning</code></pre>
+
+  <h3>14b · The Simulator</h3>
+  <p>A faithful reimplementation of the Pixelblaze runtime in TypeScript, running entirely in the browser. The Validator says <em>"this code is correct"</em>; the Simulator says <em>"this code looks like this."</em> Different jobs, both required.</p>
+
+  <h4>What it implements</h4>
+  <ul>
+    <li><strong>Pattern lifecycle</strong> — globals, <em>export var</em>, <em>beforeRender(delta)</em>, <em>render(i)</em> / <em>render2D(i,x,y)</em> / <em>render3D(i,x,y,z)</em>.</li>
+    <li><strong>Built-in functions</strong> — full set: <em>wave</em>, <em>square</em>, <em>triangle</em>, <em>sin</em>, <em>cos</em>, <em>tan</em>, <em>sqrt</em>, <em>abs</em>, <em>min</em>, <em>max</em>, <em>floor</em>, <em>ceil</em>, <em>round</em>, <em>pow</em>, <em>random</em>, <em>noise</em> (Perlin), <em>time(interval)</em>, <em>hsv</em>, <em>rgb</em>, <em>hsl2rgb</em>, <em>resetTransform</em>, <em>translate</em>, <em>rotate</em>, <em>scale</em>.</li>
+    <li><strong>Fixed-point semantics</strong> — values clamped to 16.16 range; division and overflow behave like the device, so visual bugs in simulation mirror device bugs.</li>
+    <li><strong>Time + beat injection</strong> — Simulator writes <em>bpm</em> and <em>beatAnchorMs</em> as if a Conductor were feeding them; operator can scrub BPM in the UI to test how a pattern behaves at 100 / 140 / 174.</li>
+    <li><strong>Geometry mounts</strong> — 1D → horizontal strip of N colored dots; 2D → Canvas2D grid; 3D → Three.js scene with the topology's actual pixel positions and a draggable camera.</li>
+  </ul>
+
+  <h4>Architecture — transpile, don't interpret</h4>
+  <p>Naive approach: tree-walking interpreter. Slow — won't hit 60fps for a 300-pixel strip. Better: parse PB source to AST, emit equivalent safe JavaScript (PB built-ins become shim function calls), <em>new Function()</em> it once, then call the resulting render loop natively. This gets 200-500fps for typical patterns on a laptop. Transpile happens once per generation; the runtime is then near-native JavaScript.</p>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart LR
+  classDef code fill:#1a1308,stroke:#ffb648,color:#fff
+  classDef rt fill:#0a1a1f,stroke:#00e1ff,color:#fff
+  classDef out fill:#0f1a12,stroke:#38e078,color:#fff
+
+  SRC["PB source"]:::code
+  TR["Transpile<br/>PB → safe JS"]:::rt
+  RT["Runtime shim<br/>built-ins, fixed-point"]:::rt
+  CLK["Synthetic clock<br/>bpm injector"]:::rt
+  GEO["Geometry<br/>from topology.json"]:::rt
+  CV["Canvas / WebGL<br/>render target"]:::out
+
+  SRC --> TR --> RT
+  CLK --> RT
+  GEO --> RT
+  RT -- frame buffer --> CV
+    </pre>
+  </div>
+
+  <h4>Code skeleton</h4>
+<pre data-label="pulse-simulator/runtime.ts"><code><span class="kw">import</span> { transpile } <span class="kw">from</span> <span class="str">'./transpile'</span>
+<span class="kw">import</span> { mkRuntime } <span class="kw">from</span> <span class="str">'./shim'</span>
+
+<span class="kw">export class</span> Simulator {
+  <span class="kw">private</span> render!: (i: number) =&gt; [number, number, number]
+  <span class="kw">private</span> beforeRender!: (dt: number) =&gt; void
+  <span class="kw">private</span> rt = <span class="fn">mkRuntime</span>()                <span class="com">// time(), wave(), hsv()...</span>
+  <span class="kw">private</span> lastT = <span class="fn">performance</span>.now()
+
+  <span class="fn">load</span>(source: string, geom: Geometry, pixelCount: number) {
+    <span class="kw">const</span> js = <span class="fn">transpile</span>(source, geom)
+    <span class="kw">const</span> mod = <span class="kw">new</span> <span class="fn">Function</span>(<span class="str">'rt'</span>, js + <span class="str">'; return {render, beforeRender}'</span>)
+    <span class="kw">const</span> exports = <span class="fn">mod</span>(<span class="kw">this</span>.rt)
+    <span class="kw">this</span>.render = exports.render
+    <span class="kw">this</span>.beforeRender = exports.beforeRender
+    <span class="kw">this</span>.rt.pixelCount = pixelCount
+  }
+
+  <span class="fn">setBeat</span>(bpm: number, anchorMs: number) {
+    <span class="kw">this</span>.rt.bpm = bpm
+    <span class="kw">this</span>.rt.beatAnchorMs = anchorMs
+  }
+
+  <span class="fn">step</span>(buffer: Uint8ClampedArray) {
+    <span class="kw">const</span> now = <span class="fn">performance</span>.now()
+    <span class="kw">const</span> dt = now - <span class="kw">this</span>.lastT
+    <span class="kw">this</span>.lastT = now
+    <span class="kw">this</span>.<span class="fn">beforeRender</span>(dt)
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.rt.pixelCount; i++) {
+      <span class="kw">const</span> [r, g, b] = <span class="kw">this</span>.<span class="fn">render</span>(i)
+      buffer[i*<span class="num">4</span>+<span class="num">0</span>] = r*<span class="num">255</span>
+      buffer[i*<span class="num">4</span>+<span class="num">1</span>] = g*<span class="num">255</span>
+      buffer[i*<span class="num">4</span>+<span class="num">2</span>] = b*<span class="num">255</span>
+      buffer[i*<span class="num">4</span>+<span class="num">3</span>] = <span class="num">255</span>
+    }
+  }
+}</code></pre>
+
+  <h4>Performance budget</h4>
+  <ul>
+    <li>Target: <strong>60fps stable</strong> for a 300-pixel 1D pattern on a 2024 mid-range laptop.</li>
+    <li>Acceptable: <strong>30fps</strong> for a 35×35 = 1225-pixel 2D pattern. UI shows a "preview is slowing for performance" badge.</li>
+    <li>3D Three.js render is rate-limited to <strong>30fps</strong> regardless; visual feedback is still adequate.</li>
+    <li>Simulator runs in a <strong>Web Worker</strong> so PULSEFORGE's chat UI stays responsive during render.</li>
+  </ul>
+
+  <h3>Why both</h3>
+  <p>The Validator without the Simulator gives you syntactically valid patterns that look like nothing intended. The Simulator without the Validator means you'll occasionally generate code that crashes the Pixelblaze. Together, they make the AI loop trustworthy: generate → gate → visualize → approve → deploy. The operator never sees broken code, never sees code they haven't already watched run. The trust stack is what turns "AI-generated patterns" from a parlor trick into a stage-grade tool.</p>
+</section>
+
+<!-- ═════════════════ LUMENCANVAS ═════════════════ -->
+<section id="lumencanvas">
+  <div class="section-tag">15 · LumenCanvas Integration</div>
+  <h2>Standing on Moheeb's shoulders</h2>
+  <p>PULSE as drafted has a custom Conductor that hand-rolls OSC ingestion, Pixelblaze WebSocket plumbing, clock distribution, and state sync. It works. But Moheeb Zara's <a href="https://github.com/lumencanvas">LumenCanvas</a> projects — <strong>CLASP</strong> (the protocol) and <strong>LATCH</strong> (the visual flow programming environment) — solve a large slice of that as battle-tested open infrastructure. Integration isn't required for v1, but the architecture should leave room for it because every PULSE feature gets cheaper and more interoperable once the bus is CLASP-shaped.</p>
+
+  <h3>What CLASP brings</h3>
+  <p><a href="https://clasp.to">CLASP</a> (Creative Low-latency Application Streaming Protocol) is a Rust-based router with TypeScript / Python / Arduino client SDKs, MIT/Apache licensed. Five things matter for PULSE:</p>
+  <ul>
+    <li><strong>Semantic signal types.</strong> CLASP distinguishes <em>Params</em> (stateful, persisted, delivered to late-joiners), <em>Events</em> (confirmed, ephemeral), <em>Streams</em> (high-rate, droppable), <em>Gestures</em> (phased begin/update/end), and <em>Timelines</em> (keyframed automation). PULSE's <em>bpm</em>/<em>beatAnchorMs</em> are Params. Beat ticks are Events. Energy/spectrum data is a Stream. The kill switch is a Param. The typing already exists and the routing layer respects it.</li>
+    <li><strong>Protocol bridges as architecture.</strong> Built-in bidirectional bridges for OSC, MIDI, Art-Net, DMX, MQTT, WebSocket, Socket.IO, BLE, Serial, HTTP. BLT → OSC → CLASP becomes one config line, not a custom Node listener. DMX out for non-PB fixtures is one more config line. The Conductor stops needing to know about ten protocols.</li>
+    <li><strong>Late-joiner state sync.</strong> When a tablet reloads PULSEDECK mid-show, CLASP delivers the current state of every Param the moment it subscribes. No "what scene is active right now?" round-trip. Eliminates an entire class of "I refreshed and lost context" bugs.</li>
+    <li><strong>Clock sync as a primitive.</strong> CLASP targets ±1ms LAN / ±5-10ms WiFi clock synchronization across clients. That's the same target PULSE's <em>time()</em>-via-Firestorm trick achieves, but it's a property of the bus rather than a bespoke pattern.</li>
+    <li><strong>E2E encryption + delegatable auth.</strong> Future-proofing. When a touring rig needs to talk to a home-base monitoring dashboard across the public internet, AES-256-GCM and Ed25519 capability tokens are already there.</li>
+  </ul>
+
+  <h3>PULSE-on-CLASP — future architecture</h3>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+  classDef src fill:#1a0d18,stroke:#ff2bb1,color:#fff
+  classDef bus fill:#0a1a1f,stroke:#00e1ff,color:#fff,stroke-width:3px
+  classDef client fill:#1a1308,stroke:#ffb648,color:#fff
+  classDef render fill:#0f1419,stroke:#38e078,color:#fff
+
+  CDJ["🎛 Pioneer CDJs"]:::src
+  BLT["Beat Link Trigger"]:::src
+  BR["CLASP OSC bridge<br/>(config-driven)"]:::bus
+
+  ROUTER[("🌐 CLASP Router<br/>Params · Events · Streams<br/>Late-joiner · Clock sync")]:::bus
+
+  DECK["PULSEDECK<br/>@clasp-to/sdk"]:::client
+  FORGE["PULSEFORGE<br/>@clasp-to/sdk"]:::client
+  LATCH["🎚 LATCH<br/>visual flow programs"]:::client
+  COND["PULSE Conductor<br/>(now: PB adapter only)"]:::bus
+
+  PB1["Pixelblaze · Zone A"]:::render
+  PB2["Pixelblaze · Zone B"]:::render
+  DMX["DMX/Art-Net<br/>via CLASP bridge"]:::render
+
+  CDJ --> BLT --> BR --> ROUTER
+  DECK <--> ROUTER
+  FORGE <--> ROUTER
+  LATCH <--> ROUTER
+  ROUTER <--> COND
+  COND --> PB1
+  COND --> PB2
+  ROUTER --> DMX
+    </pre>
+  </div>
+
+  <p>The Conductor's job collapses. Instead of OSC listener + custom WebSocket fanout + Firestorm HTTP shim + heartbeat + state sync, it becomes a single-purpose <strong>Pixelblaze adapter</strong>: subscribes to <em>/pulse/&#42;&#42;</em> on the CLASP router, forwards setVars to the PBs over their native WebSocket. That's it. Everything else — OSC ingestion, MIDI, DMX out, multi-client state, late-joiner sync, encryption — is the bus's job. PULSEDECK, PULSEFORGE, LATCH, and the Conductor are all just <em>@clasp-to/sdk</em> clients addressing the same paths.</p>
+
+  <h3>LATCH as alternate authoring</h3>
+  <p>PULSEFORGE is prompt-driven. <a href="https://latch.design">LATCH</a> is node-driven — TouchDesigner / Max / Pd in the browser, with first-class CLASP nodes (Connect, Subscribe, Set, Get, Emit, Stream, Bundle) and an Electron desktop build. For designers who think visually and want to wire <em>audio analysis → math → color → CLASP set</em> rather than describe in words, LATCH plugs in as another authoring path. A LATCH flow that reads the venue's audio input, extracts bass energy via Meyda, threshold-triggers a sparkle, and publishes to <em>/pulse/scene/launch</em> is six nodes. Runs in the same browser tab as PULSEDECK if you want; or as an Electron app on the FOH machine. The two authoring tools are complementary — prompts for narrative-driven scenes, node graphs for generative/reactive flows.</p>
+
+  <h3>Where each tool sits</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tool</th><th>Strength</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PULSEDECK</strong></td><td>Live ops, simple controls</td><td>The operator running the show</td></tr>
+        <tr><td><strong>PULSEFORGE</strong></td><td>Pattern authoring via prompt + mood</td><td>Designer creating the catalog</td></tr>
+        <tr><td><strong>PULSEMAP</strong></td><td>Physical mapping</td><td>Build team during install</td></tr>
+        <tr><td><strong>LATCH</strong></td><td>Visual flow programs, generative composition</td><td>Designer who thinks in node graphs; experimental rigs; sensor-reactive installations</td></tr>
+        <tr><td><strong>CLASP Bridge app</strong></td><td>Visual config of OSC/MIDI/DMX bridges</td><td>FOH engineer wiring venue-specific protocols on show day</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>conduyt — the firmware play</h3>
+  <p><a href="https://github.com/virgilvox/conduyt">conduyt</a> is Moheeb's host-to-device binary protocol — one firmware library handles framing, dispatch, and capabilities across multiple host SDKs. Pixelblaze firmware is closed-source so we can't drop conduyt in directly, but for any custom controllers built into the Panthers vehicle or future installations (ESP32-based fixtures, custom sensor nodes, animatronic actuators), conduyt gives you a real protocol instead of bespoke serial framing every time. v3 territory — only relevant once PULSE is hosting non-PB hardware.</p>
+
+  <h3>Phased adoption</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Phase</th><th>What changes</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><strong>v1 · PULSE standalone</strong></td><td>Everything as currently spec'd. Custom Conductor, direct WebSockets.</td><td>Ship first. No external dependencies. Prove the architecture works under load.</td></tr>
+        <tr><td><strong>v1.5 · CLASP in parallel</strong></td><td>Stand up a CLASP router beside the Conductor. Mirror PULSE state to <em>/pulse/&#42;&#42;</em>. LATCH can read it; PULSE itself still uses its own WS.</td><td>Low-risk read-only integration. Verify CLASP behavior on the venue network. Gets LATCH and CLASP-Bridge wiring usable.</td></tr>
+        <tr><td><strong>v2 · Conductor as CLASP client</strong></td><td>PULSEDECK and Conductor move to <em>@clasp-to/sdk</em>. BLT feeds OSC into CLASP's native bridge. Conductor's responsibility shrinks to PB-adapter.</td><td>Late-joiner sync, multi-client state, federation, protocol bridges — all gained for free.</td></tr>
+        <tr><td><strong>v3 · Custom firmware</strong></td><td>ESP32-based companion fixtures use conduyt + Arduino CLASP binding, speaking directly to the bus.</td><td>True multi-vendor rig. PBs for canonical patterns; custom nodes for sensors / actuators / effects.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout cyan">
+    <div class="callout-label">A note on building on top of friends' work</div>
+    <p style="margin:0">CLASP and LATCH are both MIT/Apache licensed — open infrastructure, no commercial entanglement. Building PULSE to be CLASP-compatible from v1.5 onward isn't a dependency you take on; it's interoperability you gain. Two creative-technology stacks built by people who know each other, talking the same protocol, runnable independently or together. That's the right shape for the Miami / Mesa maker-tech axis.</p>
+  </div>
+</section>
+
+<!-- ═════════════════ RISKS ═════════════════ -->
+<section id="risks">
+  <div class="section-tag">16 · Risks &amp; Open Questions</div>
+  <h2>What could still bite</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Risk</th><th>Likelihood</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Pioneer firmware update breaks BLT</td><td class="mono">Low — 10yr track record</td><td>Hold off updates until BLT confirms; CDJs work fine without updates.</td></tr>
+        <tr><td>WiFi AP saturation at &gt;20 PBs</td><td class="mono">Medium</td><td>Use 5 GHz dedicated AP; chunk PBs across SSIDs if needed; or use PB ethernet expander board.</td></tr>
+        <tr><td>WebSocket dropout under load</td><td class="mono">Medium</td><td>Heartbeat + auto-reconnect; PBs run autonomously on last anchor; show keeps going.</td></tr>
+        <tr><td>Pattern math doesn't match expected pixelCount</td><td class="mono">Low</td><td>Soundcheck script validates pixelCount; patterns include expected-range header.</td></tr>
+        <tr><td>BLT and Conductor on same host fight for resources</td><td class="mono">Low</td><td>Mac mini M-series or Pi 5 has plenty of headroom; monitor CPU in healthz.</td></tr>
+        <tr><td>Tablet sleeps mid-show</td><td class="mono">High</td><td>PULSEDECK uses Wake Lock API; tablet plugged in; sleep disabled in settings.</td></tr>
+        <tr><td>DJ uses XDJ-RX instead of CDJ</td><td class="mono">Show-dependent</td><td>Conductor auto-detects "no BLT" and switches to sensor mode; lights still react.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Open questions for v0.4</h3>
+  <ul>
+    <li>Pattern catalog scope — start with 12 patterns or 30? What's the minimum viable set for one festival weekend?</li>
+    <li>Should PULSEDECK have a recording mode that captures every scene/brightness/kill action with timestamps, so post-show you can replay or analyze what looked good when?</li>
+    <li>Resolume/MagicQ users get pre-cued scenes that fade in. Do we want a "next scene" / "go" workflow on top of the quick-launch grid?</li>
+    <li>Per-track scene presets — keyed by BLT track signature. Worth building, or premature optimization?</li>
+    <li>DMX bridge — does the Panthers vehicle build need DMX out for non-PB fixtures? If so, configure the CLASP DMX bridge in v1.5 or hand-roll Art-Net in v1.</li>
+    <li><strong>PULSEFORGE model choice</strong> — Sonnet 4 is the starting point. Opus for complex 3D patterns? Local Gemma/Qwen for offline venues with no internet?</li>
+    <li><strong>Music-aware composition</strong> — drop a track into PULSEFORGE, get a pre-choreographed lighting score by section. Useful for fixed sets, installations. v0.4 candidate.</li>
+    <li><strong>PULSEMAP collaboration</strong> — multiple people editing the same topology at once during a build day? Likely v1 is single-editor with git as merge tool; CRDT-based realtime co-editing is a v2 polish item (and falls out for free once on CLASP).</li>
+    <li><strong>Calibration robotics</strong> — for very large builds, a phone camera + AR could auto-detect physical pixel positions by watching the calibration sequence. Wild but doable; v3 territory.</li>
+    <li><strong>Community idiom library</strong> — should the Animation Idiom Library be a shared public catalog where the Pixelblaze community contributes? Could be hosted at <em>pulse.hello-miami.community</em> or similar.</li>
+    <li><strong>Catalog as a federated CLASP namespace</strong> — once on CLASP v2, the pattern catalog can be a federated Param tree. Other rigs running PULSE could pull-share looks. Risky for show consistency, powerful for community.</li>
+  </ul>
+</section>
+
+<footer class="foot">
+  <div>PULSE Spec · v0.3 · Always in Flux Industries</div>
+  <div>END OF DOCUMENT</div>
+</footer>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      darkMode: true,
+      background: '#11161c',
+      primaryColor: '#0a1a1f',
+      primaryTextColor: '#d8dde3',
+      primaryBorderColor: '#00e1ff',
+      lineColor: '#2c3a4a',
+      secondaryColor: '#1a0d18',
+      tertiaryColor: '#1a1308',
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '13px'
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "scenes": [
+    { "id": "pulse_white",     "name": "Pulse White",     "key": "Q1", "swatch": "#ffffff", "program": "pulse_white" },
+    { "id": "cyan_rain",       "name": "Cyan Rain",       "key": "Q2", "swatch": "#00e1ff", "program": "cyan_rain" },
+    { "id": "magenta_strobe",  "name": "Magenta Strobe",  "key": "Q3", "swatch": "#ff2bb1", "program": "magenta_strobe" },
+    { "id": "bar_sweep",       "name": "Bar Sweep",       "key": "Q4", "swatch": "#ffb648", "program": "bar_sweep" },
+    { "id": "drop_punch",      "name": "Drop Punch",      "key": "Q5", "swatch": "#ff4d5e", "program": "drop_punch" },
+    { "id": "slow_wave",       "name": "Slow Wave",       "key": "Q6", "swatch": "#6633ff", "program": "slow_wave" },
+    { "id": "energy_bars",     "name": "Energy Bars",     "key": "Q7", "swatch": "#38e078", "program": "energy_bars" },
+    { "id": "black_hold",      "name": "Black Hold",      "key": "Q8", "swatch": "#222222", "program": "black_hold" }
+  ]
+}

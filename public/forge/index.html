@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PULSEFORGE</title>
+<style>
+:root {
+  --bg:  #0a0e12; --bg2: #11161c; --bg3: #161d25;
+  --line:#1f2a36; --line2:#2c3a4a;
+  --text:#d8dde3; --dim:#8b95a3;  --faint:#525d6c;
+  --cyan:#00e1ff; --mag:#ff2bb1;  --amb:#ffb648; --grn:#38e078; --red:#ff4d5e;
+  --mono:'JetBrains Mono','Fira Mono',monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --head:'Syne','Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;}
+
+/* ── layout ── */
+#app{display:flex;flex-direction:column;height:100vh;}
+#topbar{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;background:var(--bg2);border-bottom:1px solid var(--line);flex-shrink:0;flex-wrap:wrap;}
+#topbar h1{font-family:var(--head);font-size:1rem;font-weight:700;color:var(--cyan);letter-spacing:-.01em;margin-right:.5rem;}
+#main{flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
+@media(max-width:800px){#main{grid-template-columns:1fr;}}
+
+/* ── topbar ── */
+.zone-select{background:var(--bg3);border:1px solid var(--line);padding:.45rem .75rem;border-radius:4px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;}
+.prompt-input{flex:1;background:var(--bg3);border:1px solid var(--line);padding:.5rem .8rem;border-radius:4px;color:var(--text);font-family:var(--sans);font-size:13px;min-width:200px;}
+.prompt-input:focus{outline:none;border-color:var(--cyan);}
+.gen-btn{background:linear-gradient(135deg,var(--cyan),#0099bb);border:none;padding:.5rem 1.1rem;border-radius:4px;color:#06080a;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;cursor:pointer;white-space:nowrap;}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed;}
+.var-btn{background:transparent;border:1px solid var(--line2);padding:.45rem .8rem;border-radius:4px;color:var(--dim);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
+.var-btn:hover{border-color:var(--mag);color:var(--mag);}
+.nav-link{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-decoration:none;padding:.3rem .5rem;border-radius:3px;}
+.nav-link:hover{color:var(--cyan);}
+.spinner{display:none;width:16px;height:16px;border:2px solid var(--line2);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+.spinner.show{display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── left panel: code ── */
+#left{display:flex;flex-direction:column;border-right:1px solid var(--line);overflow:hidden;}
+.panel-header{padding:.6rem 1rem;background:var(--bg2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.panel-header .v{color:var(--grn);}
+#code-area{flex:1;overflow-y:auto;background:var(--bg2);padding:.75rem 1rem;font-family:var(--mono);font-size:12px;line-height:1.6;white-space:pre;overflow-x:auto;color:var(--text);tab-size:2;}
+#code-area .kw{color:var(--mag);}
+#code-area .cm{color:var(--faint);font-style:italic;}
+#code-area .nm{color:var(--amb);}
+#code-area .fn{color:var(--cyan);}
+#code-area .st{color:var(--grn);}
+#code-area .ph{color:var(--dim);font-style:italic;}  /* placeholder */
+
+#validate-row{padding:.5rem 1rem;border-top:1px solid var(--line);background:var(--bg3);display:flex;flex-wrap:wrap;gap:.35rem;flex-shrink:0;}
+.vchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:100px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;}
+.vchip.ok  {background:rgba(56,224,120,.08);border:1px solid rgba(56,224,120,.3);color:var(--grn);}
+.vchip.ok::before{content:'✓';}
+.vchip.err {background:rgba(255,77,94,.08); border:1px solid rgba(255,77,94,.3); color:var(--red);}
+.vchip.err::before{content:'✗';}
+.vchip.warn{background:rgba(255,182,72,.08);border:1px solid rgba(255,182,72,.3);color:var(--amb);}
+.vchip.warn::before{content:'!';}
+#validate-row.empty{display:none;}
+
+#refine-row{padding:.5rem 1rem;border-top:1px solid var(--line);background:var(--bg2);display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;flex-shrink:0;}
+.rfchip{background:transparent;border:1px solid var(--line2);color:var(--dim);padding:4px 10px;border-radius:100px;font-family:var(--mono);font-size:10px;cursor:pointer;}
+.rfchip:hover{color:var(--cyan);border-color:var(--cyan);}
+.refine-input{flex:1;background:var(--bg3);border:1px solid var(--line);padding:.4rem .75rem;border-radius:100px;color:var(--text);font-family:var(--sans);font-size:12px;min-width:160px;}
+.refine-input:focus{outline:none;border-color:var(--cyan);}
+
+/* ── right panel: preview ── */
+#right{display:flex;flex-direction:column;overflow:hidden;}
+#preview-stage{flex:1;background:#06080a;position:relative;}
+canvas#sim-canvas{width:100%;height:100%;display:block;}
+#preview-footer{padding:.5rem 1rem;background:var(--bg2);border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--faint);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+#preview-footer .v{color:var(--grn);}
+
+/* bpm scrubber */
+#bpm-ctrl{display:flex;align-items:center;gap:.5rem;}
+#bpm-ctrl label{color:var(--faint);font-size:9px;letter-spacing:.12em;text-transform:uppercase;}
+#bpm-input{background:var(--bg3);border:1px solid var(--line);color:var(--cyan);font-family:var(--mono);font-size:11px;width:52px;padding:.2rem .4rem;border-radius:3px;text-align:center;}
+
+/* ── variants panel ── */
+#variants-panel{border-top:1px solid var(--line);background:var(--bg2);flex-shrink:0;max-height:140px;overflow:hidden;}
+#variants-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);height:100%;}
+.variant-card{background:var(--bg3);padding:.6rem;cursor:pointer;position:relative;border-bottom:2px solid transparent;transition:border-color .12s;}
+.variant-card:hover{background:var(--bg2);}
+.variant-card.active{border-bottom-color:var(--cyan);}
+.variant-card .vlabel{font-family:var(--mono);font-size:9px;color:var(--faint);font-weight:700;margin-bottom:.25rem;letter-spacing:.1em;}
+.variant-card.active .vlabel{color:var(--cyan);}
+canvas.v-canvas{width:100%;height:56px;display:block;border-radius:3px;background:#06080a;}
+.variant-card .vname{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.variant-card.active .vname{color:#fff;}
+
+/* ── save / deploy row ── */
+#action-row{padding:.5rem 1rem;border-top:1px solid var(--line);background:var(--bg3);display:flex;gap:.5rem;align-items:center;flex-shrink:0;}
+.save-btn{background:transparent;border:1px solid var(--grn);color:var(--grn);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:.4rem .9rem;border-radius:4px;cursor:pointer;}
+.save-btn:hover{background:var(--grn);color:#06080a;}
+.deploy-btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:.4rem .9rem;border-radius:4px;cursor:pointer;}
+.deploy-btn:hover{background:var(--cyan);color:#06080a;}
+#save-status{font-family:var(--mono);font-size:10px;color:var(--dim);margin-left:auto;}
+
+/* ── mood sliders ── */
+#mood-row{padding:.5rem 1rem;border-top:1px solid var(--line);background:var(--bg2);display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;flex-shrink:0;}
+.soul-row{display:grid;grid-template-columns:72px 1fr 26px;align-items:center;gap:.4rem;}
+.soul-key{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
+.soul-track{height:3px;background:var(--line);border-radius:2px;overflow:hidden;cursor:pointer;}
+.soul-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--mag));border-radius:2px;transition:width .1s;}
+.soul-val{font-family:var(--mono);font-size:9px;color:var(--cyan);text-align:right;}
+
+/* ── genre/idiom row ── */
+#genre-row{padding:.4rem 1rem;border-top:1px solid var(--line);background:var(--bg3);display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;flex-shrink:0;}
+.genre-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-right:.25rem;}
+.genre-chip{padding:3px 9px;border:1px solid var(--line2);border-radius:100px;color:var(--dim);background:transparent;font-family:var(--mono);font-size:9px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;}
+.genre-chip.active{border-color:var(--mag);color:var(--mag);background:rgba(255,43,177,.08);}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+
+  <!-- ── topbar ── -->
+  <div id="topbar">
+    <h1>PULSEFORGE</h1>
+    <a href="/" class="nav-link">← Deck</a>
+    <a href="/map/" class="nav-link">Map</a>
+    <select class="zone-select" id="zone-select">
+      <option value="">▾ Loading zones…</option>
+    </select>
+    <input class="prompt-input" id="prompt-input" placeholder="e.g. slow purple wave that punches on the downbeat" />
+    <div class="spinner" id="spinner"></div>
+    <button class="var-btn" id="variants-btn" title="Generate 4 variants">A/B/C/D</button>
+    <button class="gen-btn" id="gen-btn">Generate ▸</button>
+  </div>
+
+  <!-- ── soul sliders ── -->
+  <div id="mood-row">
+    <div class="soul-row" data-key="energy">
+      <span class="soul-key">Energy</span>
+      <div class="soul-track"><div class="soul-fill" style="width:60%"></div></div>
+      <span class="soul-val">60</span>
+    </div>
+    <div class="soul-row" data-key="complexity">
+      <span class="soul-key">Complexity</span>
+      <div class="soul-track"><div class="soul-fill" style="width:40%"></div></div>
+      <span class="soul-val">40</span>
+    </div>
+    <div class="soul-row" data-key="warmth">
+      <span class="soul-key">Warmth</span>
+      <div class="soul-track"><div class="soul-fill" style="width:30%"></div></div>
+      <span class="soul-val">30</span>
+    </div>
+    <div class="soul-row" data-key="surprise">
+      <span class="soul-key">Surprise</span>
+      <div class="soul-track"><div class="soul-fill" style="width:50%"></div></div>
+      <span class="soul-val">50</span>
+    </div>
+    <div class="soul-row" data-key="contrast">
+      <span class="soul-key">Contrast</span>
+      <div class="soul-track"><div class="soul-fill" style="width:70%"></div></div>
+      <span class="soul-val">70</span>
+    </div>
+    <div class="soul-row" data-key="smoothness">
+      <span class="soul-key">Smoothness</span>
+      <div class="soul-track"><div class="soul-fill" style="width:35%"></div></div>
+      <span class="soul-val">35</span>
+    </div>
+  </div>
+
+  <!-- ── genre / idioms ── -->
+  <div id="genre-row">
+    <span class="genre-label">Genre</span>
+    <button class="genre-chip" data-genre="Techno">Techno</button>
+    <button class="genre-chip active" data-genre="DnB">DnB</button>
+    <button class="genre-chip" data-genre="House">House</button>
+    <button class="genre-chip" data-genre="Trance">Trance</button>
+    <button class="genre-chip" data-genre="Ambient">Ambient</button>
+    <button class="genre-chip" data-genre="Hip-Hop">Hip-Hop</button>
+    <button class="genre-chip" data-genre="Disco">Disco</button>
+  </div>
+
+  <div id="main">
+
+    <!-- ── left: code ── -->
+    <div id="left">
+      <div class="panel-header">
+        <span>Pattern code</span>
+        <span class="v" id="code-status">waiting for prompt</span>
+      </div>
+      <div id="code-area"><span class="ph">// Pattern will appear here after generation.\n// Write a prompt above and click Generate.</span></div>
+      <div id="validate-row" class="empty"></div>
+      <div id="refine-row">
+        <button class="rfchip">slower</button>
+        <button class="rfchip">more contrast</button>
+        <button class="rfchip">sparkle on energy</button>
+        <button class="rfchip">smoother wave</button>
+        <button class="rfchip">add white flash on drop</button>
+        <input class="refine-input" id="refine-input" placeholder="refine: e.g. 'add a white flicker every 8 beats'" />
+      </div>
+    </div>
+
+    <!-- ── right: preview ── -->
+    <div id="right">
+      <div class="panel-header">
+        <span>Live preview</span>
+        <span class="v" id="preview-status">no pattern loaded</span>
+      </div>
+      <div id="preview-stage">
+        <canvas id="sim-canvas"></canvas>
+      </div>
+      <div id="preview-footer">
+        <div id="bpm-ctrl">
+          <label>BPM</label>
+          <input type="number" id="bpm-input" class="bpm-input" value="128" min="60" max="220">
+        </div>
+        <span><span class="v" id="fps-val">—</span> fps · <span id="frame-count">0</span> frames</span>
+      </div>
+
+      <!-- variants grid -->
+      <div id="variants-panel" style="display:none">
+        <div id="variants-grid"></div>
+      </div>
+
+      <!-- save / deploy -->
+      <div id="action-row">
+        <button class="save-btn" id="save-btn" disabled>Save to catalog</button>
+        <button class="deploy-btn" id="deploy-btn" disabled>Deploy to zone</button>
+        <span id="save-status"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Load deps -->
+<script src="https://cdn.jsdelivr.net/npm/acorn@8/dist/acorn.js"></script>
+<script src="/js/bugreport.js"></script>
+<script src="/js/validator.js"></script>
+<script src="/js/simulator/shim.js"></script>
+<script src="/js/simulator/transpile.js"></script>
+<script src="/js/simulator/runtime.js"></script>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let zones       = []
+let catalog     = []
+let currentCode = ''
+let history     = []   // [{role, content}] conversation
+let currentZone = null
+let sim         = null
+let variants    = []
+let soulValues  = { energy:60, complexity:40, warmth:30, surprise:50, contrast:70, smoothness:35 }
+let activeGenre = 'DnB'
+let totalFrames = 0
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  await loadZones()
+  await loadCatalog()
+  initSim()
+  wireSoulSliders()
+  wireGenreChips()
+  wireRefineChips()
+  wireControls()
+}
+
+async function loadZones() {
+  try {
+    const topo = await fetch('/api/topology').then(r => r.json())
+    zones = topo.zones || []
+    const sel = document.getElementById('zone-select')
+    sel.innerHTML = zones.length
+      ? zones.map(z => `<option value="${z.id}">${z.label || z.id}</option>`).join('')
+      : '<option value="">No zones — add via PULSEMAP</option>'
+    if (zones.length) currentZone = buildZone(zones[0])
+  } catch (_) {
+    document.getElementById('zone-select').innerHTML = '<option value="">topology unavailable</option>'
+  }
+}
+
+async function loadCatalog() {
+  try { catalog = await fetch('/api/catalog').then(r => r.json()) } catch (_) {}
+}
+
+function buildZone(z) {
+  return {
+    id: z.id,
+    label: z.label,
+    geometry: z.geometry || '1d',
+    pixelCount: z.pixelCount || 60,
+    rows: z.rows,
+    cols: z.cols,
+    physicalLength: z.physicalLength,
+  }
+}
+
+// ─── Simulator ────────────────────────────────────────────────────────────────
+function initSim() {
+  const canvas = document.getElementById('sim-canvas')
+  sim = new PulseSimulator(canvas)
+  sim.onFps = (fps) => {
+    document.getElementById('fps-val').textContent = fps
+    totalFrames++
+    document.getElementById('frame-count').textContent = totalFrames
+  }
+  sim.onError = (msg) => {
+    document.getElementById('preview-status').textContent = '⚠ ' + msg
+  }
+  sim.setBpm(128)
+}
+
+// ─── Code rendering (syntax highlight) ───────────────────────────────────────
+function renderCode(src) {
+  if (!src) {
+    document.getElementById('code-area').innerHTML = '<span class="ph">// No pattern yet.</span>'
+    return
+  }
+  // Process line by line so comment spans don't get re-highlighted inside them
+  const lines = src.split('\n').map(line => {
+    // Escape HTML first
+    let l = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+
+    // If it's a comment line, wrap the whole thing and stop
+    const commentIdx = l.indexOf('//')
+    if (commentIdx !== -1) {
+      const before = l.slice(0, commentIdx)
+      const comment = l.slice(commentIdx)
+      return highlight(before) + `<span class='cm'>${comment}</span>`
+    }
+
+    return highlight(l)
+  })
+  document.getElementById('code-area').innerHTML = lines.join('\n')
+}
+
+function highlight(l) {
+  return l
+    // single-quoted strings only (PB doesn't use double-quoted strings)
+    .replace(/('[^']*')/g, "<span class='st'>$1</span>")
+    // keywords — use single-quoted attributes so they don't match the string regex
+    .replace(/\b(export|var|function|if|return|for|while|else)\b/g, "<span class='kw'>$1</span>")
+    // numbers (not inside already-wrapped spans)
+    .replace(/(?<![a-zA-Z'"])(\b\d+\.?\d*\b)/g, "<span class='nm'>$1</span>")
+    // built-in functions
+    .replace(/\b(time|wave|square|triangle|hsv|rgb|sin|cos|noise|random|beforeRender|render2D|render3D|render)\b(?=\s*\()/g, "<span class='fn'>$1</span>")
+}
+
+// ─── Validation chips ─────────────────────────────────────────────────────────
+function renderValidation(issues, src) {
+  const row = document.getElementById('validate-row')
+  if (!src) { row.className = 'empty'; return }
+  row.className = ''
+
+  const errors = issues.filter(i => i.severity === 'error')
+  const warns  = issues.filter(i => i.severity === 'warn')
+  const bytes  = PulseValidator.codeSize(src)
+  const maxB   = 8192
+
+  const chips = []
+
+  if (!errors.length) {
+    chips.push(`<span class="vchip ok">contract vars OK</span>`)
+    chips.push(`<span class="vchip ok">kill switch wired</span>`)
+    chips.push(`<span class="vchip ok">masterBrightness wired</span>`)
+  }
+
+  chips.push(`<span class="vchip ${errors.length ? 'err':'ok'}">code ${bytes}B / ${maxB}B</span>`)
+
+  for (const e of errors) {
+    chips.push(`<span class="vchip err" title="line ${e.line}">[${e.rule}] ${e.msg}</span>`)
+  }
+  for (const w of warns) {
+    chips.push(`<span class="vchip warn" title="line ${w.line}">[${w.rule}] ${w.msg}</span>`)
+  }
+
+  row.innerHTML = chips.join('')
+}
+
+// ─── Generation ───────────────────────────────────────────────────────────────
+function buildFullPrompt(userPrompt) {
+  const genre = activeGenre
+  const soul  = Object.entries(soulValues).map(([k,v]) => `${k}=${v}%`).join(', ')
+  return `Genre: ${genre}. Soul: ${soul}.\n\n${userPrompt}`
+}
+
+async function generate(userPrompt, isRefine = false) {
+  if (!currentZone && zones.length) currentZone = buildZone(zones[0])
+  const zone = currentZone || { id:'default', geometry:'1d', pixelCount:60 }
+
+  setLoading(true)
+  document.getElementById('code-status').textContent = 'generating…'
+  document.getElementById('preview-status').textContent = 'waiting for code…'
+
+  if (isRefine) {
+    history.push({ role:'assistant', content: currentCode })
+    history.push({ role:'user',      content: userPrompt })
+  } else {
+    history = []
+  }
+
+  try {
+    const resp = await fetch('/api/forge/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt:  buildFullPrompt(userPrompt),
+        zone,
+        history: isRefine ? history : [],
+        catalog: catalog.slice(0, 3),
+      })
+    })
+
+    if (!resp.ok) {
+      const err = await resp.json()
+      throw new Error(err.error || 'Server error')
+    }
+
+    const { code, issues, attempts } = await resp.json()
+    setCode(code, issues)
+    document.getElementById('code-status').textContent =
+      `v${attempts > 1 ? attempts : '1'} · ${attempts > 1 ? `fixed in ${attempts} passes` : 'first pass'}`
+
+    if (!history.length) history.push({ role:'user', content: buildFullPrompt(userPrompt) })
+    history.push({ role:'assistant', content: code })
+
+  } catch (e) {
+    document.getElementById('code-status').textContent = '⚠ ' + e.message
+  } finally {
+    setLoading(false)
+  }
+}
+
+async function generateVariants() {
+  if (!currentZone && zones.length) currentZone = buildZone(zones[0])
+  const zone = currentZone || { id:'default', geometry:'1d', pixelCount:60 }
+  const prompt = document.getElementById('prompt-input').value.trim()
+  if (!prompt) return
+
+  setLoading(true)
+  document.getElementById('variants-panel').style.display = ''
+  document.getElementById('variants-grid').innerHTML = '<div style="padding:1rem;font-family:var(--mono);font-size:10px;color:var(--faint);grid-column:1/-1">Generating 4 variants…</div>'
+
+  try {
+    const resp = await fetch('/api/forge/variants', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt: buildFullPrompt(prompt), zone, catalog: catalog.slice(0,3) })
+    })
+    const results = await resp.json()
+    variants = results
+    renderVariants(results)
+  } catch (e) {
+    document.getElementById('variants-grid').innerHTML =
+      `<div style="padding:1rem;color:var(--red);font-family:var(--mono);font-size:10px;grid-column:1/-1">⚠ ${e.message}</div>`
+  } finally {
+    setLoading(false)
+  }
+}
+
+function renderVariants(results) {
+  const grid = document.getElementById('variants-grid')
+  grid.innerHTML = ''
+
+  results.forEach((v, idx) => {
+    const card = document.createElement('div')
+    card.className = 'variant-card' + (idx === 0 ? ' active' : '')
+    card.dataset.idx = idx
+
+    const labelEl = document.createElement('div')
+    labelEl.className = 'vlabel'
+    labelEl.textContent = v.label
+    card.appendChild(labelEl)
+
+    const canvas = document.createElement('canvas')
+    canvas.className = 'v-canvas'
+    canvas.width  = 200
+    canvas.height = 56
+    card.appendChild(canvas)
+
+    const nameEl = document.createElement('div')
+    nameEl.className = 'vname'
+    const hasError = v.issues?.some(i => i.severity === 'error')
+    nameEl.textContent = (hasError ? '⚠ ' : '') + v.code.split('\n')[0].replace('// ','').substring(0, 32)
+    card.appendChild(nameEl)
+
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.variant-card').forEach(c => c.classList.remove('active'))
+      card.classList.add('active')
+      const issues = PulseValidator.validate(v.code, currentZone?.geometry)
+      setCode(v.code, issues)
+    })
+
+    grid.appendChild(card)
+
+    // Render a still frame of this variant
+    try {
+      const vsim = new PulseSimulator(canvas)
+      vsim.load(v.code, { geometry: currentZone?.geometry || '1d', pixelCount: currentZone?.pixelCount || 60 })
+      vsim.setBpm(128)
+      // Tick once for a preview frame
+      vsim.rt._exports.beforeRender?.(16)
+      vsim.rt._reset(currentZone?.pixelCount || 60)
+      const n = currentZone?.pixelCount || 60
+      for (let i = 0; i < n; i++) {
+        vsim.rt._setCurrentPixel(i)
+        vsim.rt._exports.render?.(i)
+      }
+      const ctx = canvas.getContext('2d')
+      const pixels = vsim.rt._getPixels()
+      const diam = Math.floor(canvas.width / n)
+      ctx.fillStyle = '#06080a'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      pixels.forEach(([r,g,b], i) => {
+        const x = i * diam + diam/2
+        ctx.beginPath()
+        ctx.arc(x, canvas.height/2, Math.max(1, diam/2 - 1), 0, Math.PI*2)
+        ctx.fillStyle = `rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`
+        ctx.fill()
+      })
+    } catch (_) {}
+  })
+}
+
+// ─── Set code & run ───────────────────────────────────────────────────────────
+function setCode(code, issues) {
+  currentCode = code
+  renderCode(code)
+  renderValidation(issues || PulseValidator.validate(code, currentZone?.geometry), code)
+
+  document.getElementById('save-btn').disabled   = false
+  document.getElementById('deploy-btn').disabled = false
+
+  // Load into simulator
+  sim.stop()
+  const ok = sim.load(code, {
+    geometry:   currentZone?.geometry   || '1d',
+    pixelCount: currentZone?.pixelCount || 60,
+  })
+  if (ok) {
+    sim.start()
+    document.getElementById('preview-status').textContent = '● running'
+  } else {
+    document.getElementById('preview-status').textContent = '⚠ failed to load'
+  }
+}
+
+// ─── Save to catalog ──────────────────────────────────────────────────────────
+async function saveToCatalog() {
+  if (!currentCode) return
+  const name = prompt('Pattern name:', 'Untitled Pattern')
+  if (!name) return
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'_')
+  const entry = {
+    id, name,
+    author: 'pulseforge',
+    created: new Date().toISOString().split('T')[0],
+    target: { geometry: currentZone?.geometry || '1d', pixelCountRange: [30, 300] },
+    tags: [],
+    bpmRange: [100, 174],
+    prompt: document.getElementById('prompt-input').value,
+    code: currentCode,
+    soulValues,
+    genre: activeGenre,
+  }
+  try {
+    await fetch('/api/catalog', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry) })
+    document.getElementById('save-status').textContent = `Saved: ${name}`
+    catalog.push(entry)
+    setTimeout(() => document.getElementById('save-status').textContent = '', 3000)
+  } catch (e) {
+    document.getElementById('save-status').textContent = '⚠ save failed'
+  }
+}
+
+// ─── Deploy to zone ───────────────────────────────────────────────────────────
+async function deployToZone() {
+  if (!currentCode) return
+  const patternName = 'pulseforge_live'
+  try {
+    // Save a temp catalog entry and tell conductor to switch to it
+    await fetch('/api/catalog', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: patternName, name: 'FORGE Live', code: currentCode })
+    })
+    document.getElementById('save-status').textContent = 'Deployed ✓'
+    setTimeout(() => document.getElementById('save-status').textContent = '', 3000)
+  } catch (_) {}
+}
+
+// ─── UI wiring ────────────────────────────────────────────────────────────────
+function setLoading(on) {
+  document.getElementById('spinner').classList.toggle('show', on)
+  document.getElementById('gen-btn').disabled = on
+  document.getElementById('variants-btn').disabled = on
+}
+
+function wireControls() {
+  document.getElementById('gen-btn').addEventListener('click', () => {
+    const p = document.getElementById('prompt-input').value.trim()
+    if (p) generate(p)
+  })
+  document.getElementById('prompt-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const p = e.target.value.trim()
+      if (p) generate(p)
+    }
+  })
+  document.getElementById('variants-btn').addEventListener('click', generateVariants)
+
+  document.getElementById('refine-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const p = e.target.value.trim()
+      if (p) { generate(p, true); e.target.value = '' }
+    }
+  })
+
+  document.getElementById('bpm-input').addEventListener('change', e => {
+    const bpm = parseInt(e.target.value, 10)
+    if (bpm > 0) sim.setBpm(bpm)
+  })
+
+  document.getElementById('zone-select').addEventListener('change', e => {
+    const z = zones.find(z => z.id === e.target.value)
+    if (z) currentZone = buildZone(z)
+  })
+
+  document.getElementById('save-btn').addEventListener('click', saveToCatalog)
+  document.getElementById('deploy-btn').addEventListener('click', deployToZone)
+}
+
+function wireSoulSliders() {
+  document.querySelectorAll('.soul-row').forEach(row => {
+    const key   = row.dataset.key
+    const track = row.querySelector('.soul-track')
+    const fill  = row.querySelector('.soul-fill')
+    const val   = row.querySelector('.soul-val')
+
+    function update(e) {
+      const rect = track.getBoundingClientRect()
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
+      const pct = Math.round(Math.max(0, Math.min(100, (x / rect.width) * 100)))
+      soulValues[key] = pct
+      fill.style.width = pct + '%'
+      val.textContent = pct
+    }
+
+    let down = false
+    track.addEventListener('pointerdown', e => { down = true; track.setPointerCapture(e.pointerId); update(e) })
+    track.addEventListener('pointermove', e => { if (down) update(e) })
+    track.addEventListener('pointerup',   () => down = false)
+  })
+}
+
+function wireGenreChips() {
+  document.querySelectorAll('.genre-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'))
+      chip.classList.add('active')
+      activeGenre = chip.dataset.genre
+    })
+  })
+}
+
+function wireRefineChips() {
+  document.querySelectorAll('.rfchip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (!currentCode) return
+      generate(chip.textContent.trim(), true)
+    })
+  })
+}
+
+init().then(() => {
+  // Override the default bug button to include current pattern context
+  document.getElementById('pulse-bug-btn').addEventListener('click', (e) => {
+    e.stopImmediatePropagation()
+    PulseBugReporter.open({
+      code:   currentCode || null,
+      issues: currentCode ? PulseValidator.validate(currentCode, currentZone?.geometry) : null,
+    })
+  }, true)
+})
+</script>
+</body>
+</html>

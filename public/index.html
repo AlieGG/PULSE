@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PULSEDECK</title>
+<style>
+:root {
+  --bg:  #0a0e12;
+  --bg2: #11161c;
+  --bg3: #161d25;
+  --line: #1f2a36;
+  --line2: #2c3a4a;
+  --text: #d8dde3;
+  --dim:  #8b95a3;
+  --faint:#525d6c;
+  --cyan: #00e1ff;
+  --mag:  #ff2bb1;
+  --amb:  #ffb648;
+  --grn:  #38e078;
+  --red:  #ff4d5e;
+  --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-head: 'Syne', 'Inter', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:14px; overflow:hidden; }
+
+/* ── layout ── */
+#app { display:flex; flex-direction:column; height:100vh; }
+#statusbar { display:flex; align-items:center; gap:1.25rem; padding:.6rem 1rem; background:var(--bg2); border-bottom:1px solid var(--line); flex-shrink:0; flex-wrap:wrap; font-family:var(--font-mono); font-size:11px; }
+#main { display:flex; flex:1; overflow:hidden; }
+#stage { flex:1; padding:1rem; overflow-y:auto; display:flex; flex-direction:column; gap:1rem; }
+#sidebar { width:260px; padding:1rem; border-left:1px solid var(--line); background:var(--bg2); display:flex; flex-direction:column; gap:1rem; overflow-y:auto; flex-shrink:0; }
+
+/* ── statusbar ── */
+.pill { display:inline-flex; align-items:center; gap:.4rem; color:var(--dim); white-space:nowrap; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--faint); }
+.dot.ok  { background:var(--grn); box-shadow:0 0 8px var(--grn); }
+.dot.warn{ background:var(--amb); box-shadow:0 0 8px var(--amb); }
+.dot.err { background:var(--red); box-shadow:0 0 8px var(--red); }
+.pill .v { color:#fff; }
+
+#bpm-display { margin-left:auto; display:flex; align-items:center; gap:.6rem; }
+#beat-orb { width:14px; height:14px; border-radius:50%; background:var(--cyan); box-shadow:0 0 14px var(--cyan); transition:transform .05s, opacity .05s; }
+#beat-orb.pulse { transform:scale(1.5); opacity:1; }
+#bpm-num { font-family:var(--font-head); font-size:1.3rem; font-weight:700; color:#fff; letter-spacing:-.02em; }
+#bpm-num span { font-size:.7em; color:var(--dim); font-weight:400; }
+
+/* ── now playing ── */
+#now-playing { padding:.65rem .9rem; background:linear-gradient(90deg,rgba(255,43,177,.08),transparent); border-left:2px solid var(--mag); border-radius:0 4px 4px 0; }
+.np-label { font-family:var(--font-mono); font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--mag); margin-bottom:.15rem; }
+.np-track { font-size:13px; font-weight:500; color:#fff; }
+.np-sub   { font-size:10px; color:var(--dim); font-family:var(--font-mono); }
+
+/* ── section labels ── */
+.section-label { font-family:var(--font-mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); display:flex; justify-content:space-between; margin-bottom:.4rem; }
+
+/* ── scene grid ── */
+#scene-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.scene-btn {
+  aspect-ratio:1; border:1px solid var(--line); background:var(--bg2); border-radius:6px;
+  padding:.5rem; cursor:pointer; position:relative; font-family:var(--font-mono); font-size:10px;
+  color:var(--dim); display:flex; flex-direction:column; justify-content:space-between;
+  transition:border-color .12s, background .12s; user-select:none; -webkit-user-select:none;
+}
+.scene-btn:hover { border-color:var(--cyan); color:#fff; }
+.scene-btn.active {
+  border-color:var(--cyan); background:linear-gradient(135deg,rgba(0,225,255,.15),rgba(0,225,255,.02));
+  color:#fff; box-shadow:0 0 0 1px var(--cyan), 0 0 18px rgba(0,225,255,.15);
+}
+.scene-btn .key { font-size:8px; color:var(--faint); letter-spacing:.1em; }
+.scene-btn.active .key { color:var(--cyan); }
+.scene-btn .name { font-size:11px; line-height:1.2; }
+.scene-swatch { position:absolute; top:6px; right:6px; width:8px; height:8px; border-radius:2px; }
+
+/* ── zones ── */
+#zones-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.zone-tile { border:1px solid var(--line); background:var(--bg2); border-radius:6px; padding:.65rem; }
+.zone-name { font-family:var(--font-mono); font-size:10px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.2rem; }
+.zone-status { font-size:10px; font-family:var(--font-mono); display:flex; align-items:center; gap:4px; color:var(--grn); }
+.zone-status .d { width:5px; height:5px; background:var(--grn); border-radius:50%; box-shadow:0 0 6px var(--grn); }
+.zone-tile.off .zone-status { color:var(--faint); }
+.zone-tile.off .zone-status .d { background:var(--faint); box-shadow:none; }
+.zone-bar { margin-top:.4rem; height:3px; background:var(--line); border-radius:2px; overflow:hidden; }
+.zone-bar .fill { height:100%; background:linear-gradient(90deg,var(--cyan),var(--mag)); transition:width .3s; }
+
+/* ── sidebar controls ── */
+.ctrl-block { display:flex; flex-direction:column; gap:.4rem; }
+.ctrl-label { font-family:var(--font-mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); display:flex; justify-content:space-between; }
+.ctrl-label .v { color:var(--cyan); }
+
+.slider-wrap { position:relative; height:4px; background:var(--line); border-radius:2px; cursor:pointer; touch-action:none; }
+.slider-fill  { height:100%; background:linear-gradient(90deg,var(--cyan),var(--mag)); border-radius:2px; pointer-events:none; }
+.slider-thumb { position:absolute; top:-5px; width:14px; height:14px; background:#fff; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 0 3px var(--bg2), 0 0 10px var(--cyan); pointer-events:none; }
+
+.hue-track { position:relative; height:12px; border-radius:6px; background:linear-gradient(90deg,#ff0040 0%,#ffaa00 16%,#ffff00 33%,#00ff80 50%,#00aaff 66%,#6600ff 83%,#ff0040 100%); cursor:pointer; touch-action:none; }
+.hue-thumb  { position:absolute; top:-3px; width:18px; height:18px; background:#fff; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 0 2px var(--bg2), 0 2px 8px rgba(0,0,0,.6); pointer-events:none; }
+
+.toggle-row { display:flex; gap:5px; }
+.toggle-btn {
+  flex:1; padding:.4rem .2rem; border:1px solid var(--line); background:transparent;
+  color:var(--dim); font-family:var(--font-mono); font-size:10px; letter-spacing:.08em;
+  text-transform:uppercase; border-radius:4px; cursor:pointer; text-align:center;
+  transition:all .12s;
+}
+.toggle-btn.on { border-color:var(--cyan); color:var(--cyan); background:rgba(0,225,255,.06); }
+
+#kill-btn {
+  width:100%; padding:.8rem;
+  background:linear-gradient(135deg,#2a0a10,#1a0508);
+  border:1px solid var(--red); color:var(--red);
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.2em;
+  text-transform:uppercase; border-radius:6px; cursor:pointer; font-weight:700;
+  transition:all .12s; margin-top:auto;
+}
+#kill-btn.active, #kill-btn:hover { background:var(--red); color:#fff; box-shadow:0 0 24px rgba(255,77,94,.4); }
+
+/* ── connection overlay ── */
+#offline-banner { display:none; position:fixed; inset:0; background:rgba(10,14,18,.85); backdrop-filter:blur(4px); z-index:999; align-items:center; justify-content:center; flex-direction:column; gap:.75rem; }
+#offline-banner.show { display:flex; }
+#offline-banner p { font-family:var(--font-mono); font-size:12px; color:var(--dim); letter-spacing:.1em; }
+#offline-banner .blink { color:var(--red); animation:blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity:0; } }
+
+@media (max-width:720px) {
+  #main { flex-direction:column; }
+  #sidebar { width:100%; border-left:none; border-top:1px solid var(--line); }
+  #zones-row { grid-template-columns:repeat(2,1fr); }
+  #scene-grid { grid-template-columns:repeat(4,1fr); }
+}
+@media (max-width:480px) {
+  #scene-grid { grid-template-columns:repeat(3,1fr); }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── status bar ── -->
+  <div id="statusbar">
+    <span class="pill"><span class="dot" id="dot-blt"></span>BLT <span class="v" id="val-blt">—</span></span>
+    <span class="pill"><span class="dot" id="dot-fs"></span>Firestorm <span class="v" id="val-fs">—</span></span>
+    <span class="pill"><span class="dot" id="dot-pbs"></span>PBs <span class="v" id="val-pbs">0/0</span></span>
+    <span class="pill"><span class="dot warn"></span>Mode <span class="v" id="val-mode">—</span></span>
+    <div id="bpm-display">
+      <div id="beat-orb"></div>
+      <div id="bpm-num">—<span> BPM</span></div>
+    </div>
+  </div>
+
+  <div id="main">
+
+    <!-- ── stage ── -->
+    <div id="stage">
+
+      <div id="now-playing">
+        <div class="np-label">Now playing</div>
+        <div class="np-track" id="np-track">—</div>
+        <div class="np-sub"   id="np-sub">Waiting for signal</div>
+      </div>
+
+      <div>
+        <div class="section-label"><span>Scenes</span><span>tap to launch</span></div>
+        <div id="scene-grid"></div>
+      </div>
+
+      <div>
+        <div class="section-label"><span>Zones</span><span>per-fixture status</span></div>
+        <div id="zones-row"></div>
+      </div>
+
+    </div>
+
+    <!-- ── sidebar ── -->
+    <div id="sidebar">
+
+      <div class="ctrl-block">
+        <div class="ctrl-label"><span>Master brightness</span><span class="v" id="lbl-bright">80%</span></div>
+        <div class="slider-wrap" id="sl-bright">
+          <div class="slider-fill"  id="sf-bright" style="width:80%"></div>
+          <div class="slider-thumb" id="st-bright"  style="left:80%"></div>
+        </div>
+      </div>
+
+      <div class="ctrl-block">
+        <div class="ctrl-label"><span>Hue offset</span><span class="v" id="lbl-hue">0°</span></div>
+        <div class="hue-track" id="sl-hue">
+          <div class="hue-thumb" id="st-hue" style="left:0%"></div>
+        </div>
+      </div>
+
+      <div class="ctrl-block">
+        <div class="ctrl-label"><span>Strobe rate</span><span class="v" id="lbl-strobe">off</span></div>
+        <div class="toggle-row" id="strobe-row">
+          <button class="toggle-btn on"  data-val="1">off</button>
+          <button class="toggle-btn"     data-val="2">½</button>
+          <button class="toggle-btn"     data-val="4">¼</button>
+          <button class="toggle-btn"     data-val="8">⅛</button>
+        </div>
+      </div>
+
+      <div class="ctrl-block">
+        <div class="ctrl-label">Mode lock</div>
+        <div class="toggle-row" id="mode-row">
+          <button class="toggle-btn" data-val="live">Live</button>
+          <button class="toggle-btn" data-val="sensor">Sensor</button>
+          <button class="toggle-btn" data-val="freerun">Tap</button>
+        </div>
+      </div>
+
+      <div class="ctrl-block">
+        <div class="ctrl-label">Beat divider</div>
+        <div class="toggle-row" id="div-row">
+          <button class="toggle-btn"     data-val="0.5">½×</button>
+          <button class="toggle-btn on"  data-val="1">1×</button>
+          <button class="toggle-btn"     data-val="2">2×</button>
+          <button class="toggle-btn"     data-val="4">4×</button>
+        </div>
+      </div>
+
+      <div class="ctrl-block" id="tap-block" style="display:none">
+        <div class="ctrl-label">Tap tempo</div>
+        <button id="tap-btn" style="width:100%;padding:.7rem;border:1px solid var(--line2);background:transparent;color:var(--text);font-family:var(--font-mono);font-size:11px;border-radius:6px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;">TAP</button>
+      </div>
+
+      <button id="kill-btn">⌧ KILL · ALL BLACK</button>
+
+    </div>
+  </div>
+</div>
+
+<div id="offline-banner">
+  <span class="blink" style="font-family:var(--font-mono);font-size:1.1rem;color:var(--red);letter-spacing:.2em">CONDUCTOR OFFLINE</span>
+  <p>Reconnecting…</p>
+</div>
+
+<script src="/js/bugreport.js"></script>
+<script>
+// ─── WebSocket ────────────────────────────────────────────────────────────────
+let ws, reconnectTimer
+let state = {}
+let scenes = []
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  ws = new WebSocket(`${proto}//${location.host}/ws`)
+
+  ws.onopen = () => {
+    document.getElementById('offline-banner').classList.remove('show')
+    clearTimeout(reconnectTimer)
+  }
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data)
+    if (msg.type === 'state') {
+      if (msg.scenes) { scenes = msg.scenes; renderScenes() }
+      state = msg
+      applyState()
+    }
+  }
+
+  ws.onclose = ws.onerror = () => {
+    document.getElementById('offline-banner').classList.add('show')
+    reconnectTimer = setTimeout(connect, 2000)
+  }
+}
+
+function send(obj) {
+  if (ws?.readyState === 1) ws.send(JSON.stringify(obj))
+}
+
+// ─── Beat flash ───────────────────────────────────────────────────────────────
+let lastAnchor = 0
+let beatFlashTimer
+
+function scheduleBeatFlash() {
+  if (!state.bpm || !state.beatAnchorMs) return
+  const interval = 60000 / (state.bpm * (state.beatDivider || 1))
+  const now = Date.now()
+  const elapsed = now - state.beatAnchorMs
+  const nextBeat = interval - (elapsed % interval)
+
+  clearTimeout(beatFlashTimer)
+  beatFlashTimer = setTimeout(() => {
+    const orb = document.getElementById('beat-orb')
+    orb.classList.add('pulse')
+    setTimeout(() => orb.classList.remove('pulse'), 80)
+    scheduleBeatFlash()
+  }, nextBeat)
+}
+
+// ─── Apply state to DOM ───────────────────────────────────────────────────────
+function applyState() {
+  // BPM
+  const bpmEl = document.getElementById('bpm-num')
+  bpmEl.innerHTML = `${(state.bpm||0).toFixed(1)}<span> BPM</span>`
+
+  // Mode
+  document.getElementById('val-mode').textContent = (state.mode||'—').toUpperCase()
+
+  // BLT indicator — live = ok, sensor/freerun = warn
+  const dotBlt = document.getElementById('dot-blt')
+  const valBlt = document.getElementById('val-blt')
+  if (state.mode === 'live') { dotBlt.className='dot ok'; valBlt.textContent='linked' }
+  else if (state.mode === 'sensor') { dotBlt.className='dot warn'; valBlt.textContent='sensor' }
+  else { dotBlt.className='dot err'; valBlt.textContent='offline' }
+
+  // Firestorm
+  const dotFs = document.getElementById('dot-fs')
+  const valFs = document.getElementById('val-fs')
+  dotFs.className = state.firestormUp ? 'dot ok' : 'dot err'
+  valFs.textContent = state.firestormUp ? 'up' : 'down'
+
+  // PBs
+  document.getElementById('dot-pbs').className = state.pbCount > 0 ? 'dot ok' : 'dot err'
+  document.getElementById('val-pbs').textContent = `${state.pbCount||0}/${state.pbTotal||0}`
+
+  // Now playing
+  if (state.nowPlaying) {
+    document.getElementById('np-track').textContent = `${state.nowPlaying.artist} — ${state.nowPlaying.title}`
+    document.getElementById('np-sub').textContent = `Player ${state.nowPlaying.player}`
+  }
+
+  // Active scene highlight
+  document.querySelectorAll('.scene-btn').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === state.activeScene)
+  })
+
+  // Kill button
+  document.getElementById('kill-btn').classList.toggle('active', !!state.killActive)
+
+  // Brightness slider
+  const bright = state.masterBrightness ?? 0.8
+  document.getElementById('sf-bright').style.width = `${bright*100}%`
+  document.getElementById('st-bright').style.left  = `${bright*100}%`
+  document.getElementById('lbl-bright').textContent = `${Math.round(bright*100)}%`
+
+  // Hue slider
+  const hue = state.hueOffset ?? 0
+  document.getElementById('st-hue').style.left = `${hue*100}%`
+  document.getElementById('lbl-hue').textContent = `${Math.round(hue*360)}°`
+
+  // Strobe toggles
+  document.querySelectorAll('#strobe-row .toggle-btn').forEach(el => {
+    el.classList.toggle('on', +el.dataset.val === (state.strobeRate||1))
+  })
+  const strMap = {1:'off',2:'½',4:'¼',8:'⅛'}
+  document.getElementById('lbl-strobe').textContent = strMap[state.strobeRate||1] || '—'
+
+  // Mode lock toggles
+  document.querySelectorAll('#mode-row .toggle-btn').forEach(el => {
+    el.classList.toggle('on', el.dataset.val === state.mode)
+  })
+
+  // Beat divider toggles
+  document.querySelectorAll('#div-row .toggle-btn').forEach(el => {
+    el.classList.toggle('on', +el.dataset.val === (state.beatDivider||1))
+  })
+
+  // Tap block visibility
+  document.getElementById('tap-block').style.display = state.mode === 'freerun' ? '' : 'none'
+
+  // Beat flash scheduling
+  if (state.beatAnchorMs !== lastAnchor) {
+    lastAnchor = state.beatAnchorMs
+    scheduleBeatFlash()
+  }
+}
+
+// ─── Render scenes ────────────────────────────────────────────────────────────
+function renderScenes() {
+  const grid = document.getElementById('scene-grid')
+  grid.innerHTML = ''
+  for (const scene of scenes) {
+    const btn = document.createElement('button')
+    btn.className = 'scene-btn'
+    btn.dataset.id = scene.id
+    btn.innerHTML = `
+      <div class="key">${scene.key||''}</div>
+      <div class="name">${scene.name}</div>
+      <div class="scene-swatch" style="background:${scene.swatch||'#444'}"></div>
+    `
+    btn.addEventListener('click', () => send({ type:'scene', scene: scene.id }))
+    grid.appendChild(btn)
+  }
+}
+
+// ─── Zone tiles (from topology) ───────────────────────────────────────────────
+async function loadZones() {
+  try {
+    const topo = await fetch('/api/topology').then(r => r.json())
+    const row = document.getElementById('zones-row')
+    row.innerHTML = ''
+    const zones = topo.zones || []
+    if (!zones.length) {
+      row.innerHTML = '<span style="font-family:var(--font-mono);font-size:10px;color:var(--faint)">No zones defined — use PULSEMAP to add zones</span>'
+      return
+    }
+    for (const zone of zones) {
+      const tile = document.createElement('div')
+      tile.className = 'zone-tile'
+      tile.innerHTML = `
+        <div class="zone-name">${zone.label||zone.id}</div>
+        <div class="zone-status"><span class="d"></span>ONLINE</div>
+        <div class="zone-bar"><div class="fill" style="width:${Math.round((state.masterBrightness||1)*100)}%"></div></div>
+      `
+      row.appendChild(tile)
+    }
+  } catch (_) {}
+}
+
+// ─── Slider drag helper ───────────────────────────────────────────────────────
+function makeDraggable(trackEl, onValue) {
+  function calc(e) {
+    const rect = trackEl.getBoundingClientRect()
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
+    return Math.max(0, Math.min(1, x / rect.width))
+  }
+  let dragging = false
+  trackEl.addEventListener('pointerdown', e => {
+    dragging = true
+    trackEl.setPointerCapture(e.pointerId)
+    onValue(calc(e))
+  })
+  trackEl.addEventListener('pointermove', e => { if (dragging) onValue(calc(e)) })
+  trackEl.addEventListener('pointerup',   () => { dragging = false })
+}
+
+// ─── Wire up controls ─────────────────────────────────────────────────────────
+makeDraggable(document.getElementById('sl-bright'), v => {
+  send({ type:'brightness', value: Math.round(v*100)/100 })
+})
+
+makeDraggable(document.getElementById('sl-hue'), v => {
+  send({ type:'hue', value: Math.round(v*1000)/1000 })
+})
+
+document.querySelectorAll('#strobe-row .toggle-btn').forEach(el => {
+  el.addEventListener('click', () => send({ type:'strobe', value: +el.dataset.val }))
+})
+
+document.querySelectorAll('#mode-row .toggle-btn').forEach(el => {
+  el.addEventListener('click', () => send({ type:'mode', mode: el.dataset.val }))
+})
+
+document.querySelectorAll('#div-row .toggle-btn').forEach(el => {
+  el.addEventListener('click', () => send({ type:'divider', value: +el.dataset.val }))
+})
+
+document.getElementById('kill-btn').addEventListener('click', () => send({ type:'kill' }))
+
+document.getElementById('tap-btn').addEventListener('click', () => {
+  send({ type:'tap', t: Date.now() })
+})
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+connect()
+loadZones()
+</script>
+</body>
+</html>

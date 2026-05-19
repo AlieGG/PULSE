@@ -1,0 +1,18 @@
+{
+  "name": "pulse",
+  "version": "0.1.0",
+  "description": "Pixelblaze Unified Live Sync Engine",
+  "main": "conductor/index.js",
+  "scripts": {
+    "start": "node conductor/index.js",
+    "dev": "node conductor/index.js --dev",
+    "lint": "node conductor/lint.js catalog/"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.55.0",
+    "acorn": "^8.14.1",
+    "express": "^4.21.2",
+    "osc": "^2.4.5",
+    "ws": "^8.18.2"
+  }
+}

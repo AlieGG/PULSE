@@ -2,21 +2,13 @@
  * PULSE Bug Reporter
  * Drop <script src="/js/bugreport.js"></script> into any page.
  * Call PulseBugReporter.open({ code, issues }) to open with context pre-filled.
+ * No floating button is injected — wire your own trigger to PulseBugReporter.open().
  */
 ;(function () {
   'use strict'
 
   // ── Styles ──────────────────────────────────────────────────────────────────
   const CSS = `
-#pulse-bug-btn {
-  position: fixed; bottom: 1rem; right: 1rem; z-index: 900;
-  background: #161d25; border: 1px solid #2c3a4a;
-  color: #525d6c; font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
-  padding: .4rem .75rem; border-radius: 4px; cursor: pointer;
-  transition: all .15s;
-}
-#pulse-bug-btn:hover { border-color: #ff4d5e; color: #ff4d5e; }
 
 #pulse-bug-overlay {
   display: none; position: fixed; inset: 0; z-index: 1000;
@@ -123,8 +115,6 @@
 
   // ── DOM ──────────────────────────────────────────────────────────────────────
   document.body.insertAdjacentHTML('beforeend', `
-<button id="pulse-bug-btn">⚠ Report Bug</button>
-
 <div id="pulse-bug-overlay">
   <div id="pulse-bug-modal">
     <div id="pulse-bug-header">
@@ -287,7 +277,6 @@
   }
 
   // ── Wire ──────────────────────────────────────────────────────────────────
-  document.getElementById('pulse-bug-btn').addEventListener('click',   () => open())
   document.getElementById('pulse-bug-close').addEventListener('click', close)
   document.getElementById('pulse-bug-submit').addEventListener('click', submit)
   document.getElementById('pulse-bug-overlay').addEventListener('click', e => {
